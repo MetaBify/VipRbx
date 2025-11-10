@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 type ChatMessage = {
@@ -223,7 +224,7 @@ export default function ChatWidget() {
           className={`fixed z-[9999] flex flex-col ${
             isMobile
               ? "inset-x-0 bottom-0 top-0 bg-white"
-              : "bottom-24 right-4 w-[360px] rounded-3xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur"
+              : "top-20 bottom-4 right-4 w-[360px] rounded-3xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur"
           }`}
         >
           <div className="flex items-center justify-between border-b px-4 py-3">
@@ -365,15 +366,20 @@ export default function ChatWidget() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className={`fixed z-[9998] bg-emerald-500 text-xs font-semibold uppercase tracking-wide text-white shadow-xl transition hover:bg-emerald-600 ${
+          className={`fixed z-[9998] rounded-full bg-white shadow-xl ring-2 ring-emerald-400 transition hover:scale-105 ${
             isMobile
-              ? "bottom-4 right-4 rounded-full px-4 py-2 sm:right-6"
-              : "top-1/2 right-0 -translate-y-1/2 rounded-l-3xl px-4 py-6"
-          }`}
+              ? "bottom-4 right-4 h-14 w-14 sm:right-6"
+              : "top-1/2 right-4 h-16 w-16 -translate-y-1/2"
+          } flex items-center justify-center`}
+          aria-label="Open chat"
         >
-          <span className={`${isMobile ? "" : "-rotate-90 block whitespace-nowrap"}`}>
-            💬 {buttonLabel}
-          </span>
+          <Image
+            src="https://icons.veryicon.com/png/o/commerce-shopping/jinfeng-technology-icon-library/chat-116.png"
+            alt="Chat icon"
+            width={isMobile ? 28 : 32}
+            height={isMobile ? 28 : 32}
+            className="object-contain"
+          />
         </button>
       )}
     </>

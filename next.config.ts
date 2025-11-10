@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
       "cdn.affise.com",
       "i.gyazo.com",
       "static.wikia.nocookie.net",
+      "icons.veryicon.com",
     ],
   },
   async rewrites() {

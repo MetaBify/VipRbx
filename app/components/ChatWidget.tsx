@@ -162,6 +162,25 @@ type RainStatus = {
   durationMinutes: number;
   expiresAt: string;
 };
+type MutedUser = {
+  id: string;
+  username: string;
+  mutedUntil: string;
+};
+
+const formatMuteRemaining = (iso: string) => {
+  const target = new Date(iso).getTime();
+  if (Number.isNaN(target)) {
+    return "Unknown";
+  }
+  const diff = target - Date.now();
+  if (diff <= 0) {
+    return "Expired";
+  }
+  const minutes = Math.floor(diff / 60000);
+  const seconds = Math.floor((diff % 60000) / 1000);
+  return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+};
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -194,6 +213,9 @@ export default function ChatWidget() {
   const [rainDuration, setRainDuration] = useState(DEFAULT_RAIN_DURATION);
   const [rainSubmitting, setRainSubmitting] = useState(false);
   const [rainCountdown, setRainCountdown] = useState<string | null>(null);
+  const [showMutedList, setShowMutedList] = useState(false);
+  const [mutedUsers, setMutedUsers] = useState<MutedUser[]>([]);
+  const [mutedLoading, setMutedLoading] = useState(false);
 
   const fetchViewer = useCallback(async () => {
     try {
@@ -249,6 +271,29 @@ export default function ChatWidget() {
     }
   }, []);
 
+  const fetchMutedUsers = useCallback(async () => {
+    if (!viewer?.isAdmin) {
+      setMutedUsers([]);
+      return;
+    }
+    setMutedLoading(true);
+    try {
+      const response = await fetch("/api/chat/manage", { cache: "no-store" });
+      if (!response.ok) {
+        if (response.status === 401) {
+          fetchViewer();
+        }
+        return;
+      }
+      const data = await response.json();
+      setMutedUsers(data.muted ?? []);
+    } catch (error) {
+      console.error("Muted users fetch failed", error);
+    } finally {
+      setMutedLoading(false);
+    }
+  }, [viewer?.isAdmin, fetchViewer]);
+
   useEffect(() => {
     fetchViewer();
     loadMessages();
@@ -275,6 +320,19 @@ export default function ChatWidget() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!viewer?.isAdmin) {
+      setShowMutedList(false);
+      setMutedUsers([]);
+    }
+  }, [viewer?.isAdmin]);
+
+  useEffect(() => {
+    if (showMutedList && open && viewer?.isAdmin) {
+      fetchMutedUsers();
+    }
+  }, [showMutedList, open, viewer?.isAdmin, fetchMutedUsers]);
 
   useEffect(() => {
     if (!rain) {
@@ -386,16 +444,17 @@ export default function ChatWidget() {
         }),
       });
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        setAdminStatus(data.error ?? "Failed to timeout user.");
-        return false;
-      }
-      setAdminStatus(`User muted for ${minutes} min.`);
-      return true;
-    } catch (error) {
-      console.error(error);
-      setAdminStatus("Network error while muting user.");
+      const data = await response.json().catch(() => ({}));
+      setAdminStatus(data.error ?? "Failed to timeout user.");
       return false;
+    }
+    setAdminStatus(`User muted for ${minutes} min.`);
+    fetchMutedUsers();
+    return true;
+  } catch (error) {
+    console.error(error);
+    setAdminStatus("Network error while muting user.");
+    return false;
     }
   };
 
@@ -417,6 +476,7 @@ export default function ChatWidget() {
         return;
       }
       setAdminStatus("User mute removed.");
+      fetchMutedUsers();
     } catch (error) {
       console.error(error);
       setAdminStatus("Network error while lifting mute.");
@@ -588,6 +648,21 @@ export default function ChatWidget() {
                 <button
                   type="button"
                   onClick={() => {
+                    const next = !showMutedList;
+                    setShowMutedList(next);
+                    if (next) {
+                      fetchMutedUsers();
+                    }
+                  }}
+                  className="rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600 hover:border-slate-400"
+                >
+                  {showMutedList ? "Hide muted" : "Muted users"}
+                </button>
+              )}
+              {viewer?.isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
                     setRainAmount(DEFAULT_RAIN_AMOUNT);
                     setRainDuration(DEFAULT_RAIN_DURATION);
                     setRainFormOpen(true);
@@ -606,6 +681,59 @@ export default function ChatWidget() {
               </button>
             </div>
           </div>
+          {viewer?.isAdmin && showMutedList && (
+            <div className="border-b bg-slate-50 px-4 py-3 text-xs text-slate-600">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                  Muted users ({mutedUsers.length})
+                </p>
+                <button
+                  type="button"
+                  onClick={fetchMutedUsers}
+                  className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide hover:border-slate-400"
+                >
+                  Refresh
+                </button>
+              </div>
+              {mutedLoading ? (
+                <p className="text-[11px] text-slate-500">Loading...</p>
+              ) : mutedUsers.length === 0 ? (
+                <p className="text-[11px] text-slate-500">
+                  Nobody is muted right now.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {mutedUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between rounded-2xl bg-white px-3 py-2"
+                    >
+                      <div>
+                        <p className="text-[11px] font-semibold text-slate-800">
+                          {user.username}
+                        </p>
+                        <p className="text-[10px] text-slate-500">
+                          Until{" "}
+                          {new Date(user.mutedUntil).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}{" "}
+                          ({formatMuteRemaining(user.mutedUntil)})
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRelease(user.id)}
+                        className="rounded-full border border-emerald-200 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 hover:border-emerald-400"
+                      >
+                        Unmute
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex-1 space-y-2 overflow-y-auto px-4 py-3 text-sm">
             {messages.length === 0 ? (
               <p className="text-center text-xs text-slate-500">

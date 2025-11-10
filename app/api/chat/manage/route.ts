@@ -11,7 +11,11 @@ type Payload =
 const MAX_TIMEOUT_MINUTES = 1440; // 24 hours
 const MAX_REASON_LENGTH = 200;
 
-export async function POST(req: NextRequest) {
+type AdminAuthResult =
+  | { response: NextResponse }
+  | { actor: { id: string; isAdmin: boolean } };
+
+async function authorizeAdmin(req: NextRequest): Promise<AdminAuthResult> {
   const cookieStore = await cookies();
   const token =
     cookieStore.get(authCookieOptions.name)?.value ??
@@ -19,7 +23,7 @@ export async function POST(req: NextRequest) {
   const userId = verifyToken(token);
 
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return { response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
 
   const actor = await prisma.user.findUnique({
@@ -28,8 +32,41 @@ export async function POST(req: NextRequest) {
   });
 
   if (!actor?.isAdmin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return { response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
+
+  return { actor };
+}
+
+export async function GET(req: NextRequest) {
+  const authResult = await authorizeAdmin(req);
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+  const { actor } = authResult;
+
+  const now = new Date();
+  const muted = await prisma.user.findMany({
+    where: { chatMutedUntil: { gt: now } },
+    select: { id: true, username: true, chatMutedUntil: true },
+    orderBy: { chatMutedUntil: "desc" },
+  });
+
+  return NextResponse.json({
+    muted: muted.map((user) => ({
+      id: user.id,
+      username: user.username,
+      mutedUntil: user.chatMutedUntil,
+    })),
+  });
+}
+
+export async function POST(req: NextRequest) {
+  const authResult = await authorizeAdmin(req);
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+  const { actor } = authResult;
 
   let payload: Payload;
   try {

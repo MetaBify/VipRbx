@@ -421,7 +421,12 @@ export default function ChatWidget() {
                           <button
                             type="button"
                             key={category}
-                            onClick={() => setEmojiCategory(category)}
+                            onClick={() => {
+                              const section = document.getElementById(
+                                `emoji-${category}`
+                              );
+                              section?.scrollIntoView({ behavior: "smooth" });
+                            }}
                             className={`rounded-full px-2 py-1 ${
                               emojiCategory === category
                                 ? "bg-emerald-100 text-emerald-700"
@@ -434,21 +439,59 @@ export default function ChatWidget() {
                       )}
                     </div>
                   </div>
-                  <div className="mt-2 max-h-48 overflow-y-auto">
-                    <div className="grid grid-cols-6 gap-1 text-xl">
-                      {emojiCategories[emojiCategory].map((emoji) => (
-                        <button
-                          type="button"
-                          key={emoji}
-                          onClick={() =>
-                            setInput((prev) => (prev + emoji).slice(0, MAX_LEN))
+                  <div
+                    className="mt-2 max-h-48 overflow-y-auto"
+                    onScroll={(event) => {
+                      const container = event.currentTarget;
+                      const sections =
+                        container.querySelectorAll<HTMLDivElement>("[data-emoji-section]");
+
+                      let currentCategory: EmojiCategory | null = null;
+                      sections.forEach((section) => {
+                        const rect = section.getBoundingClientRect();
+                        if (rect.top >= container.getBoundingClientRect().top) {
+                          if (!currentCategory) {
+                            currentCategory = section.dataset
+                              .emojiSection as EmojiCategory;
                           }
-                          className="rounded-lg bg-slate-50 py-1 hover:bg-slate-100"
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
+                        }
+                      });
+
+                      if (currentCategory && currentCategory !== emojiCategory) {
+                        setEmojiCategory(currentCategory);
+                      }
+                    }}
+                  >
+                    {(
+                      Object.entries(emojiCategories) as [EmojiCategory, string[]][]
+                    ).map(([category, emojis]) => (
+                      <div
+                        key={category}
+                        id={`emoji-${category}`}
+                        data-emoji-section={category}
+                        className="pb-3"
+                      >
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">
+                          {category}
+                        </p>
+                        <div className="mt-1 grid grid-cols-6 gap-1 text-xl">
+                          {emojis.map((emoji) => (
+                            <button
+                              type="button"
+                              key={emoji}
+                              onClick={() =>
+                                setInput((prev) =>
+                                  (prev + emoji).slice(0, MAX_LEN)
+                                )
+                              }
+                              className="rounded-lg bg-slate-50 py-1 hover:bg-slate-100"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

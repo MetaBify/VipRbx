@@ -199,8 +199,11 @@ const NavBar = () => {
               </Link>
             ))}
           </div>
+        </div>
+
+        <div className="flex items-center gap-3">
           {user && (
-            <div className="flex items-center gap-2 rounded-full bg-white/70 px-2.5 py-1 text-[13px] font-semibold text-gray-900 lg:hidden">
+            <div className="ml-auto flex items-center gap-2 rounded-full bg-white/70 px-2.5 py-1 text-[13px] font-semibold text-gray-900 lg:hidden">
               <Image
                 src={avatarUrl}
                 alt={`${user.username}'s Avatar`}
@@ -209,7 +212,7 @@ const NavBar = () => {
                 height={56}
                 unoptimized
               />
-              <div className="flex flex-col leading-tight">
+              <div className="flex flex-col items-end leading-tight text-right">
                 <span className="text-xs font-semibold">
                   {user.username} <span className="text-[10px]">Lv {user.level}</span>
                 </span>
@@ -226,9 +229,6 @@ const NavBar = () => {
               </div>
             </div>
           )}
-        </div>
-
-        <div className="flex items-center gap-3">
           <div className="hidden lg:flex items-center gap-3 pr-2">
             {loading ? null : user ? (
               <>

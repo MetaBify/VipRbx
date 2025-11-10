@@ -9,7 +9,7 @@ import ChatWidget from "./components/ChatWidget";
 
 const siteTitle = "VipRbx | Earn Robux by Completing Offers";
 const siteDescription =
-  "Earn free Robux by completing trusted offer wall tasks, syncing progress, and cashing out instantly. Track your pending leads, withdrawals, and global chat rewards all in one dashboard.";
+  "Complete curated offers, earn points, and cash out for Robux gift cards and other rewards with VipRbx's community-driven dashboard.";
 
 export const metadata: Metadata = {
   metadataBase:

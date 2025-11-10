@@ -342,7 +342,7 @@ export default function ChatWidget() {
               </p>
             </div>
             <button
-              className="text-lg text-slate-500 hover:text-slate-900"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-500 text-sm font-bold text-white shadow hover:bg-rose-600"
               onClick={() => setOpen(false)}
               aria-label="Close chat"
             >

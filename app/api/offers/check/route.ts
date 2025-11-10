@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 const checkUrl = process.env.OFFER_CHECK_URL;
 const feedUserId = process.env.OFFER_FEED_USER_ID;
 const feedApiKey = process.env.OFFER_FEED_API_KEY;
-const CHECK_WINDOW_MS = 30 * 60 * 1000;
+const CHECK_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function parseLeadsPayload(payload: unknown): any[] {
   if (Array.isArray(payload)) {

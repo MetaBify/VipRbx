@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Loading from "../components/Loader";
@@ -20,7 +20,7 @@ type OfferItem = {
   [key: string]: unknown;
 };
 
-const CHECK_WINDOW_MS = 30 * 60 * 1000;
+const CHECK_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function extractOfferPoints(offer: OfferItem): number {
   const candidates: number[] = [];
@@ -253,8 +253,6 @@ export default function VerifyPage() {
     });
   }, [user?.leads]);
 
-  const recentLeads = useMemo(() => user?.leads ?? [], [user?.leads]);
-
   const handleStartOffer = useCallback(
     async (offer: OfferItem) => {
       window.open(offer.url, "_blank", "noopener");
@@ -426,55 +424,11 @@ export default function VerifyPage() {
                 href="/withdraw"
                 className="rounded-full border border-emerald-400 px-5 py-2 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-500 hover:text-white"
               >
-                Claim rewards
-              </Link>
-              <Link
-                href="/withdraw"
-                className="rounded-full border border-emerald-400 px-5 py-2 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-500 hover:text-white"
-              >
                 Withdraw
               </Link>
             </div>
           </div>
 
-          {!!recentLeads.length && (
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              {recentLeads.slice(0, 6).map((lead) => (
-                <div
-                  key={lead.id}
-                  className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-700 shadow-sm"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-900">
-                      Offer {lead.offerId}
-                    </span>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        lead.status === "AVAILABLE"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : lead.status === "PENDING"
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-slate-100 text-slate-700"
-                      }`}
-                    >
-                      {lead.status.toLowerCase()}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-                    <span>{lead.points.toFixed(2)} pts</span>
-                    <span>
-                      {new Date(lead.createdAt).toLocaleString(undefined, {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </section>
       )}
 

@@ -4,7 +4,7 @@ import { randomUUID } from "crypto";
 import { authCookieOptions, verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-const CHECK_WINDOW_MS = 30 * 60 * 1000;
+const CHECK_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 const computeLevel = (balance: number, pending: number) =>
   Math.max(1, Math.floor((balance + pending) / 100) + 1);

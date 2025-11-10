@@ -15,6 +15,7 @@ type ChatMessage = {
 
 const MAX_LEN = 230;
 const MAX_TIMEOUT_MINUTES = 1440;
+const DEFAULT_RAIN_AMOUNT = 10;
 const emojiCategories = {
   Smileys: [
     "😀",
@@ -148,6 +149,14 @@ type TimeoutFormState = {
   minutes: number;
   reason: string;
 };
+type RainStatus = {
+  id: string;
+  amount: number;
+  createdAt: string;
+  createdBy: string;
+  claims: number;
+  claimedByViewer: boolean;
+};
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -172,6 +181,12 @@ export default function ChatWidget() {
     () => Object.entries(emojiCategories) as [EmojiCategory, readonly string[]][],
     []
   );
+  const [rain, setRain] = useState<RainStatus | null>(null);
+  const [claimingRain, setClaimingRain] = useState(false);
+  const [rainMessage, setRainMessage] = useState<string | null>(null);
+  const [rainFormOpen, setRainFormOpen] = useState(false);
+  const [rainAmount, setRainAmount] = useState(DEFAULT_RAIN_AMOUNT);
+  const [rainSubmitting, setRainSubmitting] = useState(false);
 
   const fetchViewer = useCallback(async () => {
     try {
@@ -211,12 +226,29 @@ export default function ChatWidget() {
     }
   }, []);
 
+  const fetchRain = useCallback(async () => {
+    try {
+      const response = await fetch("/api/chat/rain", { cache: "no-store" });
+      if (!response.ok) {
+        return;
+      }
+      const data = await response.json();
+      setRain(data.rain);
+    } catch (error) {
+      console.error("Rain fetch failed", error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchViewer();
     loadMessages();
-    const interval = window.setInterval(loadMessages, 8000);
+    fetchRain();
+    const interval = window.setInterval(() => {
+      loadMessages();
+      fetchRain();
+    }, 8000);
     return () => window.clearInterval(interval);
-  }, [fetchViewer, loadMessages]);
+  }, [fetchViewer, loadMessages, fetchRain]);
 
   useEffect(() => {
     if (!open) {
@@ -380,6 +412,95 @@ export default function ChatWidget() {
     }
   };
 
+  const handleClaimRain = async () => {
+    if (!rain || rain.claimedByViewer) return;
+    if (!viewer) {
+      setStatus("Sign in to claim the rain.");
+      return;
+    }
+    setClaimingRain(true);
+    setRainMessage(null);
+    try {
+      const response = await fetch("/api/chat/rain/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setRainMessage(data.error ?? "Unable to claim right now.");
+        if (response.status === 401) {
+          fetchViewer();
+        }
+        return;
+      }
+      setRainMessage(`+${Number(data.claimed).toFixed(0)} points added!`);
+      setRain((prev) =>
+        prev
+          ? {
+              ...prev,
+              claimedByViewer: true,
+              claims: prev.claims + 1,
+            }
+          : prev
+      );
+      fetchViewer();
+      fetchRain();
+    } catch (error) {
+      console.error(error);
+      setRainMessage("Network error while claiming.");
+    } finally {
+      setClaimingRain(false);
+    }
+  };
+
+  const closeRainForm = () => {
+    if (rainSubmitting) return;
+    setRainFormOpen(false);
+  };
+
+  const handleRainStart = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!viewer?.isAdmin) return;
+    setRainSubmitting(true);
+    setAdminStatus(null);
+    const normalizedAmount = Math.max(
+      1,
+      Math.min(5000, Math.round(rainAmount || 1))
+    );
+    setRainAmount(normalizedAmount);
+    try {
+      const response = await fetch("/api/chat/rain/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: normalizedAmount }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setAdminStatus(data.error ?? "Failed to start rain.");
+        return;
+      }
+      setAdminStatus("Rain started.");
+      setRainFormOpen(false);
+      fetchRain();
+    } catch (error) {
+      console.error(error);
+      setAdminStatus("Network error while starting rain.");
+    } finally {
+      setRainSubmitting(false);
+    }
+  };
+
+  const canClaimRain = Boolean(rain && viewer && !rain.claimedByViewer);
+  const rainButtonLabel = !rain
+    ? ""
+    : !viewer
+    ? "Login to claim"
+    : rain.claimedByViewer
+    ? "Claimed"
+    : claimingRain
+    ? "Claiming..."
+    : "Join rain";
+
   return (
     <>
       {open && isMobile && (
@@ -409,13 +530,27 @@ export default function ChatWidget() {
                   : "Checking session..."}
               </p>
             </div>
-            <button
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-500 text-sm font-bold text-white shadow hover:bg-rose-600"
-              onClick={() => setOpen(false)}
-              aria-label="Close chat"
-            >
-              ×
-            </button>
+            <div className="flex items-center gap-2">
+              {viewer?.isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRainAmount(DEFAULT_RAIN_AMOUNT);
+                    setRainFormOpen(true);
+                  }}
+                  className="rounded-full border border-emerald-200 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-600 hover:border-emerald-400"
+                >
+                  Start rain
+                </button>
+              )}
+              <button
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-500 text-sm font-bold text-white shadow hover:bg-rose-600"
+                onClick={() => setOpen(false)}
+                aria-label="Close chat"
+              >
+                ×
+              </button>
+            </div>
           </div>
           <div className="flex-1 space-y-2 overflow-y-auto px-4 py-3 text-sm">
             {messages.length === 0 ? (
@@ -477,6 +612,39 @@ export default function ChatWidget() {
               ))
             )}
           </div>
+          {rain && (
+            <div className="mx-4 mb-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-600">
+                    Rain is live
+                  </p>
+                  <p className="text-base font-bold text-emerald-900">
+                    Claim {Number(rain.amount).toFixed(0)} points
+                  </p>
+                  <p className="text-[11px] text-emerald-700">
+                    Started by {rain.createdBy} · {rain.claims} claimed
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClaimRain}
+                  disabled={!viewer || rain.claimedByViewer || claimingRain}
+                  className="rounded-full border border-emerald-600 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-700 transition enabled:hover:bg-emerald-600 enabled:hover:text-white disabled:cursor-not-allowed disabled:border-emerald-200 disabled:text-emerald-300"
+                >
+                  {rainButtonLabel}
+                </button>
+              </div>
+              {rainMessage && (
+                <p className="mt-2 text-xs text-emerald-700">{rainMessage}</p>
+              )}
+              {!viewer && (
+                <p className="mt-1 text-[11px] text-emerald-600">
+                  Sign in to grab this drop.
+                </p>
+              )}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="border-t px-4 py-3">
             <div className="relative">
               <textarea
@@ -710,6 +878,71 @@ export default function ChatWidget() {
                   disabled={timeoutSubmitting}
                 >
                   {timeoutSubmitting ? "Muting..." : "Mute user"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {rainFormOpen && viewer?.isAdmin && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-900/40 px-4"
+          onClick={closeRainForm}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">
+                  Start a rain
+                </p>
+                <p className="text-xs text-slate-500">
+                  Everyone online can claim the amount you set once.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeRainForm}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-500 hover:bg-slate-200"
+                aria-label="Close rain form"
+                disabled={rainSubmitting}
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleRainStart} className="mt-4 space-y-3">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Amount per user
+                <input
+                  type="number"
+                  min={1}
+                  max={5000}
+                  step={1}
+                  value={rainAmount}
+                  onChange={(event) =>
+                    setRainAmount(Math.max(1, Number(event.target.value)))
+                  }
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                  disabled={rainSubmitting}
+                />
+              </label>
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={closeRainForm}
+                  className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:border-slate-400 disabled:opacity-70"
+                  disabled={rainSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full bg-emerald-500 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white shadow hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-emerald-400"
+                  disabled={rainSubmitting}
+                >
+                  {rainSubmitting ? "Starting..." : "Start rain"}
                 </button>
               </div>
             </form>

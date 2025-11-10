@@ -19,6 +19,8 @@ model User {
   chatMutedUntil DateTime?
   leads      OfferLead[]
   messages   ChatMessage[]
+  rainEvents RainEvent[] @relation("RainCreated")
+  rainClaims RainClaim[]
 }
 
 model OfferLead {
@@ -42,4 +44,25 @@ model ChatMessage {
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
   userId    String
+}
+
+model RainEvent {
+  id          String      @id @default(cuid())
+  amount      Float
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  createdBy   User?       @relation("RainCreated", fields: [createdById], references: [id])
+  createdById String?
+  claims      RainClaim[]
+}
+
+model RainClaim {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  rain      RainEvent @relation(fields: [rainId], references: [id])
+  rainId    String
+
+  @@unique([rainId, userId])
 }

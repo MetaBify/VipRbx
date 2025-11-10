@@ -221,7 +221,7 @@ export default function ChatWidget() {
       )}
       {open && (
         <div
-          className={`fixed z-[9999] flex flex-col ${
+          className={`fixed z-[9999] flex flex-col overflow-hidden ${
             isMobile
               ? "inset-x-0 bottom-0 top-0 bg-white"
               : "top-20 bottom-4 right-4 w-[360px] rounded-3xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur"
@@ -248,7 +248,7 @@ export default function ChatWidget() {
               ×
             </button>
           </div>
-          <div className="flex flex-col gap-2 overflow-y-auto px-4 py-3 text-sm sm:max-h-[320px]">
+          <div className="flex-1 space-y-2 overflow-y-auto px-4 py-3 text-sm">
             {messages.length === 0 ? (
               <p className="text-center text-xs text-slate-500">
                 No one has chatted yet. Be the first!

@@ -14,6 +14,9 @@ interface UserSummary {
   pending: number;
   availablePoints: number;
   totalPoints: number;
+  level: number;
+  isAdmin?: boolean;
+  chatMutedUntil?: string | null;
 }
 
 const logoSrc = "/images/roblox-logo.png";

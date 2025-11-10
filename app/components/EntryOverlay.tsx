@@ -118,6 +118,17 @@ export default function EntryOverlay() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const dismissed =
+      sessionStorage.getItem("viprbx-entry-overlay-dismissed") === "true";
+    if (dismissed) {
+      setOpen(false);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!open) {
       return;
     }
@@ -138,6 +149,11 @@ export default function EntryOverlay() {
 
   const handleClose = () => {
     setOpen(false);
+    try {
+      sessionStorage.setItem("viprbx-entry-overlay-dismissed", "true");
+    } catch {
+      // ignore session storage errors
+    }
   };
 
   if (!open) {

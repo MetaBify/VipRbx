@@ -31,6 +31,9 @@ export default function LoginPage() {
 
       router.push("/verify");
       router.refresh();
+      if (typeof window !== "undefined") {
+        window.location.href = "/verify";
+      }
     } catch (err) {
       console.error(err);
       setError("Something went wrong while logging in.");

@@ -29,10 +29,10 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/verify");
+      router.push("/offers");
       router.refresh();
       if (typeof window !== "undefined") {
-        window.location.href = "/verify";
+        window.location.href = "/offers";
       }
     } catch (err) {
       console.error(err);

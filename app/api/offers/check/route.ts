@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 const checkUrl = process.env.OFFER_CHECK_URL;
 const feedUserId = process.env.OFFER_FEED_USER_ID;
 const feedApiKey = process.env.OFFER_FEED_API_KEY;
+const CHECK_WINDOW_MS = 30 * 60 * 1000;
 
 function parseLeadsPayload(payload: unknown): any[] {
   if (Array.isArray(payload)) {
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
     const now = new Date();
 
     const result = await prisma.$transaction(async (tx) => {
-      let pendingIncrement = 0;
+      let pendingDelta = 0;
 
       for (const lead of leads) {
         const externalId = String(
@@ -115,7 +116,37 @@ export async function POST(req: NextRequest) {
         }
 
         const pointAmount = Number((pointsCents / 100).toFixed(2));
-        const availableAt = new Date(Date.now() + 30 * 60 * 1000);
+        const availableAt = new Date(Date.now() + CHECK_WINDOW_MS);
+
+        const placeholder = await tx.offerLead.findFirst({
+          where: {
+            userId,
+            offerId,
+            status: "CHECKING",
+          },
+          orderBy: { createdAt: "asc" },
+        });
+
+        if (placeholder) {
+          const previousPoints = Number(placeholder.points);
+          const pointsDiff = pointAmount - previousPoints;
+
+          await tx.offerLead.update({
+            where: { id: placeholder.id },
+            data: {
+              externalId,
+              points: pointAmount,
+              status: "PENDING",
+              availableAt,
+              raw: JSON.stringify(lead),
+            },
+          });
+
+          if (pointsDiff !== 0) {
+            pendingDelta += pointsDiff;
+          }
+          continue;
+        }
 
         await tx.offerLead.create({
           data: {
@@ -129,15 +160,15 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        pendingIncrement += pointAmount;
+        pendingDelta += pointAmount;
       }
 
-      if (pendingIncrement > 0) {
+      if (pendingDelta !== 0) {
         await tx.user.update({
           where: { id: userId },
           data: {
             pending: {
-              increment: pendingIncrement,
+              increment: pendingDelta,
             },
           },
         });
@@ -189,7 +220,7 @@ export async function POST(req: NextRequest) {
 
       return {
         user: updatedUser,
-        pendingIncrement,
+        pendingIncrement: pendingDelta,
         balanceIncrement,
       };
     });

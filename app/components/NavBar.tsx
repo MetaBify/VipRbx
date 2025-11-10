@@ -5,56 +5,22 @@ import Link from "next/link";
 import Image from "next/image";
 import { FaBars, FaTimes } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-
-interface UserSummary {
-  id: string;
-  username: string;
-  email: string;
-  balance: number;
-  pending: number;
-  availablePoints: number;
-  totalPoints: number;
-  level: number;
-  isAdmin?: boolean;
-  chatMutedUntil?: string | null;
-}
+import { useUserSummary } from "@/lib/useUserSummary";
 
 const logoSrc = "/images/roblox-logo.png";
 const pointsIconSrc = "/images/robux-points.png";
 
 const NavBar = () => {
-  const [user, setUser] = useState<UserSummary | null>(null);
+  const { user, loading, refresh } = useUserSummary();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState("/images/noob.png");
   const router = useRouter();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch("/api/user/me", { cache: "no-store" });
-        if (!response.ok) {
-          setUser(null);
-          return;
-        }
-        const data = await response.json();
-        setUser(data.user);
-      } catch (error) {
-        console.error("Failed to load user", error);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, []);
 
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
-      setUser(null);
+      refresh();
       setAvatarUrl("/images/noob.png");
       router.push("/login");
       router.refresh();
@@ -177,7 +143,7 @@ const NavBar = () => {
   }, [user?.username]);
 
   const baseLinks = [
-    { href: "/verify", label: "Offers" },
+    { href: "/offers", label: "Offers" },
     { href: "/levels", label: "Levels" },
     { href: "/about", label: "Q&A" },
   ];

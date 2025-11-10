@@ -30,7 +30,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push("/verify");
+      router.push("/offers");
       router.refresh();
     } catch (err) {
       console.error(err);

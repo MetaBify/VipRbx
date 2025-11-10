@@ -146,7 +146,7 @@ const RobuxBox = () => {
             Robux as a reward!
           </p>
           <button
-            onClick={() => router.push("/verify")}
+            onClick={() => router.push("/offers")}
             style={{ fontSize: "19px" }}
             className="mt-3 w-1/3 hover:bg-green-700 bg-green-500"
           >

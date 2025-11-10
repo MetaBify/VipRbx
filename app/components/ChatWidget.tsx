@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useUserSummary } from "@/lib/useUserSummary";
 
 type ChatMessage = {
   id: string;
@@ -183,6 +184,7 @@ const formatMuteRemaining = (iso: string) => {
 };
 
 export default function ChatWidget() {
+  const { refresh: refreshUserSummary } = useUserSummary();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -545,6 +547,7 @@ export default function ChatWidget() {
       );
       fetchViewer();
       fetchRain();
+      refreshUserSummary();
     } catch (error) {
       console.error(error);
       setRainMessage("Network error while claiming.");

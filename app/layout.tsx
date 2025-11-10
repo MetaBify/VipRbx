@@ -7,10 +7,49 @@ import ClickTracker from "./components/ClickTracker";
 import AntiAdblockPopup from "./components/AntiAdblockPopup";
 import ChatWidget from "./components/ChatWidget";
 
+const siteTitle = "VipRbx | Earn Robux by Completing Offers";
+const siteDescription =
+  "Earn free Robux by completing trusted offer wall tasks, syncing progress, and cashing out instantly. Track your pending leads, withdrawals, and global chat rewards all in one dashboard.";
+
 export const metadata: Metadata = {
-  title: "viprbx",
-  description:
-    "Get virtual currency for Roblox. Visit this site to receive funds for your Roblox games.",
+  metadataBase:
+    typeof process !== "undefined" && process.env.NEXT_PUBLIC_BASE_URL
+      ? new URL(process.env.NEXT_PUBLIC_BASE_URL)
+      : undefined,
+  title: siteTitle,
+  description: siteDescription,
+  keywords: [
+    "earn robux",
+    "free robux",
+    "robux offers",
+    "robux rewards",
+    "robux payout",
+    "robux withdraw",
+    "complete offers robux",
+    "roblox rewards",
+    "viprbx",
+  ],
+  openGraph: {
+    title: siteTitle,
+    description: siteDescription,
+    url: "/offers",
+    siteName: "VipRbx",
+    type: "website",
+    images: [
+      {
+        url: "/images/roblox-logo.png",
+        width: 512,
+        height: 512,
+        alt: "VipRbx - Earn Robux",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteTitle,
+    description: siteDescription,
+    images: ["/images/roblox-logo.png"],
+  },
   icons: {
     icon: [{ rel: "icon", url: "/images/web-logo.png", sizes: "any" }],
   },

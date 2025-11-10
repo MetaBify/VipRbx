@@ -16,6 +16,36 @@ export async function GET(req: NextRequest) {
 
   const now = new Date();
 
+  const expiredChecking = await prisma.offerLead.findMany({
+    where: {
+      userId,
+      status: "CHECKING",
+      availableAt: { lte: now },
+    },
+    select: { id: true, points: true },
+  });
+
+  if (expiredChecking.length) {
+    const expiredIds = expiredChecking.map((lead) => lead.id);
+    const expiredPoints = expiredChecking.reduce(
+      (total, lead) => total + Number(lead.points),
+      0
+    );
+
+    await prisma.$transaction([
+      prisma.offerLead.updateMany({
+        where: { id: { in: expiredIds } },
+        data: { status: "FAILED" },
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          pending: { decrement: expiredPoints },
+        },
+      }),
+    ]);
+  }
+
   const maturedLeads = await prisma.offerLead.findMany({
     where: {
       userId,

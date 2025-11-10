@@ -1,6 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useSyncExternalStore,
+} from "react";
 
 export type LeadSummary = {
   id: string;
@@ -26,54 +30,136 @@ export type UserSummary = {
   leads: LeadSummary[];
 };
 
-type StateError = string | null;
+type StoreState = {
+  user: UserSummary | null;
+  loading: boolean;
+  needsAuth: boolean;
+  error: string | null;
+};
+
+const listeners = new Set<() => void>();
+let state: StoreState = {
+  user: null,
+  loading: true,
+  needsAuth: false,
+  error: null,
+};
+
+const emit = () => {
+  listeners.forEach((listener) => listener());
+};
+
+const setState = (partial: Partial<StoreState>) => {
+  state = { ...state, ...partial };
+  emit();
+};
+
+const updateUserState = (
+  updater:
+    | UserSummary
+    | null
+    | ((prev: UserSummary | null) => UserSummary | null)
+) => {
+  const nextValue =
+    typeof updater === "function"
+      ? (updater as (prev: UserSummary | null) => UserSummary | null)(state.user)
+      : updater;
+
+  setState({
+    user: nextValue,
+    needsAuth: nextValue ? false : state.needsAuth,
+  });
+};
+
+const fetchUser = async () => {
+  if (state.loading) {
+    setState({ error: null });
+  } else {
+    setState({ loading: true, error: null });
+  }
+
+  try {
+    const response = await fetch("/api/user/me", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error("Failed to load user.");
+    }
+
+    const data = await response.json();
+    if (!data?.user) {
+      setState({
+        user: null,
+        needsAuth: true,
+        loading: false,
+      });
+      return;
+    }
+
+    setState({
+      user: data.user,
+      needsAuth: false,
+      loading: false,
+    });
+  } catch (error) {
+    console.error(error);
+    setState({
+      user: null,
+      needsAuth: true,
+      loading: false,
+      error: "Unable to fetch user details right now.",
+    });
+  }
+};
+
+const subscribe = (listener: () => void) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
+
+const getSnapshot = () => state;
+
+let initialized = false;
+
+const init = () => {
+  if (initialized) return;
+  initialized = true;
+  if (typeof window !== "undefined") {
+    fetchUser();
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchUser();
+      }
+    };
+    window.addEventListener("focus", fetchUser);
+    document.addEventListener("visibilitychange", handleVisibility);
+  }
+};
 
 export function useUserSummary() {
-  const [user, setUser] = useState<UserSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [needsAuth, setNeedsAuth] = useState(false);
-  const [error, setError] = useState<StateError>(null);
-
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch("/api/user/me", { cache: "no-store" });
-      if (!response.ok) {
-        setNeedsAuth(true);
-        setUser(null);
-        return;
-      }
-
-      const data = await response.json();
-      if (!data.user) {
-        setNeedsAuth(true);
-        setUser(null);
-        return;
-      }
-
-      setNeedsAuth(false);
-      setUser(data.user);
-    } catch (err) {
-      console.error(err);
-      setError("Unable to fetch user details right now.");
-      setNeedsAuth(true);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    init();
   }, []);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
+  const refresh = useCallback(() => {
+    fetchUser();
+  }, []);
+
+  const setUser = useCallback(
+    (
+      updater:
+        | UserSummary
+        | null
+        | ((prev: UserSummary | null) => UserSummary | null)
+    ) => {
+      updateUserState(updater);
+    },
+    []
+  );
 
   return {
-    user,
-    setUser,
-    loading,
-    needsAuth,
-    error,
+    ...snapshot,
     refresh,
+    setUser,
   };
 }

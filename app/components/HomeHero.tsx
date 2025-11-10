@@ -21,8 +21,8 @@ export default function HomeHero() {
     if (user) {
       return (
         <div className="flex flex-col items-center gap-3 sm:flex-row">
-          <Link
-            href="/verify"
+            <Link
+              href="/offers"
             className="w-56 rounded-full bg-white px-6 py-3 text-center text-sm font-semibold text-emerald-600 shadow-lg transition hover:bg-emerald-50"
           >
             View offers

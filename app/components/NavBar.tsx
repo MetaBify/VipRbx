@@ -199,10 +199,10 @@ const NavBar = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={handleMenuToggle}
-            className="text-[#393b3d] text-2xl lg:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white/80 text-[#393b3d] shadow lg:hidden"
             aria-label="Open navigation"
           >
-            <FaBars />
+            <FaBars size={18} />
           </button>
           <Link href="/" className="lg:hidden">
             <Image

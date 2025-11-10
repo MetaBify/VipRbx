@@ -56,6 +56,7 @@ export default function ChatWidget() {
   const [authChecked, setAuthChecked] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [adminStatus, setAdminStatus] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const fetchViewer = useCallback(async () => {
     try {
@@ -107,6 +108,16 @@ export default function ChatWidget() {
       setShowEmojiPicker(false);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -200,9 +211,21 @@ export default function ChatWidget() {
   };
 
   return (
-    <div className="fixed bottom-24 right-4 z-[9999] flex flex-col items-end space-y-2">
+    <>
+      {open && isMobile && (
+        <div
+          className="fixed inset-0 z-[9998] bg-slate-900/40 backdrop-blur-sm"
+          onClick={() => setOpen(false)}
+        />
+      )}
       {open && (
-        <div className="flex w-80 flex-col rounded-2xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur">
+        <div
+          className={`fixed z-[9999] flex flex-col ${
+            isMobile
+              ? "inset-x-0 bottom-0 top-0 bg-white"
+              : "bottom-24 right-4 w-[360px] rounded-3xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur"
+          }`}
+        >
           <div className="flex items-center justify-between border-b px-4 py-3">
             <div>
               <p className="text-sm font-semibold text-slate-900">
@@ -217,13 +240,14 @@ export default function ChatWidget() {
               </p>
             </div>
             <button
-              className="text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-900"
+              className="text-lg text-slate-500 hover:text-slate-900"
               onClick={() => setOpen(false)}
+              aria-label="Close chat"
             >
-              Close
+              ×
             </button>
           </div>
-          <div className="flex max-h-72 flex-col gap-2 overflow-y-auto px-4 py-3 text-sm">
+          <div className="flex flex-col gap-2 overflow-y-auto px-4 py-3 text-sm sm:max-h-[320px]">
             {messages.length === 0 ? (
               <p className="text-center text-xs text-slate-500">
                 No one has chatted yet. Be the first!
@@ -232,13 +256,15 @@ export default function ChatWidget() {
               messages.map((message) => (
                 <div
                   key={message.id}
-                  className="rounded-xl bg-slate-100 px-3 py-2 text-slate-800"
+                  className="rounded-2xl bg-slate-50 px-3 py-2 text-slate-800"
                 >
-                  <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
-                    <span>
-                      {message.username} · Lv {message.level}
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600">
+                    <span className="flex flex-wrap items-center gap-1">
+                      <span className="text-[11px]">
+                        {message.username} · Lv {message.level}
+                      </span>
                       {message.isAdmin && (
-                        <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold uppercase text-emerald-700">
                           Admin
                         </span>
                       )}
@@ -250,14 +276,14 @@ export default function ChatWidget() {
                           onClick={() => handleDelete(message.id)}
                           className="rounded-full border border-slate-200 px-2 py-0.5 text-rose-600 hover:border-rose-400"
                         >
-                          Delete
+                          🗑️
                         </button>
                         <button
                           type="button"
                           onClick={() => handleTimeout(message.userId, 60)}
                           className="rounded-full border border-slate-200 px-2 py-0.5 text-amber-600 hover:border-amber-400"
                         >
-                          Timeout
+                          ⏱️
                         </button>
                       </div>
                     )}
@@ -276,29 +302,27 @@ export default function ChatWidget() {
                     setInput(event.target.value);
                   }
                 }}
-                rows={2}
+                rows={3}
                 placeholder={
                   viewer ? "Share something helpful..." : "Sign in to chat."
                 }
                 disabled={!viewer || sending}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30 disabled:cursor-not-allowed disabled:bg-slate-100"
+                className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30 disabled:cursor-not-allowed disabled:bg-slate-100"
               />
               {showEmojiPicker && (
-                <div className="absolute bottom-full right-0 mb-2 w-56 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
-                  <p className="text-xs uppercase tracking-[0.35em] text-emerald-500">
+                <div className="absolute bottom-full right-0 mb-2 w-60 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+                  <div className="text-[11px] uppercase tracking-[0.3em] text-emerald-500">
                     Emojis
-                  </p>
-                  <div className="mt-2 grid grid-cols-6 gap-1 text-lg">
+                  </div>
+                  <div className="mt-2 grid grid-cols-6 gap-1 text-xl">
                     {EMOJIS.map((emoji) => (
                       <button
                         type="button"
                         key={emoji}
                         onClick={() =>
-                          setInput((prev) =>
-                            (prev + emoji).slice(0, MAX_LEN)
-                          )
+                          setInput((prev) => (prev + emoji).slice(0, MAX_LEN))
                         }
-                        className="rounded-lg bg-slate-50 py-1 text-base hover:bg-slate-100"
+                        className="rounded-lg bg-slate-50 py-1 hover:bg-slate-100"
                       >
                         {emoji}
                       </button>
@@ -315,15 +339,15 @@ export default function ChatWidget() {
                 <button
                   type="button"
                   onClick={() => setShowEmojiPicker((prev) => !prev)}
-                  className="rounded-full border border-slate-200 px-2 py-1 text-[11px] uppercase tracking-wide text-slate-600 hover:border-emerald-400"
+                  className="rounded-full border border-slate-200 px-3 py-1 text-sm hover:border-emerald-400"
                 >
-                  {showEmojiPicker ? "Hide emojis" : "Emojis"}
+                  😊
                 </button>
               </div>
               <button
                 type="submit"
                 disabled={!viewer || sending || !input.trim()}
-                className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-emerald-400"
+                className="rounded-full bg-emerald-500 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-emerald-400"
               >
                 {sending ? "Sending..." : "Send"}
               </button>
@@ -337,12 +361,21 @@ export default function ChatWidget() {
           </form>
         </div>
       )}
-      <button
-        onClick={() => setOpen((prev) => !prev)}
-        className="rounded-full bg-emerald-500 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-lg transition hover:bg-emerald-600"
-      >
-        {buttonLabel}
-      </button>
-    </div>
+
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          className={`fixed z-[9998] bg-emerald-500 text-xs font-semibold uppercase tracking-wide text-white shadow-xl transition hover:bg-emerald-600 ${
+            isMobile
+              ? "bottom-4 right-4 rounded-full px-4 py-2 sm:right-6"
+              : "top-1/2 right-0 -translate-y-1/2 rounded-l-3xl px-4 py-6"
+          }`}
+        >
+          <span className={`${isMobile ? "" : "-rotate-90 block whitespace-nowrap"}`}>
+            💬 {buttonLabel}
+          </span>
+        </button>
+      )}
+    </>
   );
 }

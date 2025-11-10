@@ -14,34 +14,133 @@ type ChatMessage = {
 };
 
 const MAX_LEN = 230;
-const EMOJIS = [
-  "😀",
-  "😁",
-  "😂",
-  "🤣",
-  "😊",
-  "😍",
-  "😎",
-  "🤩",
-  "😇",
-  "🤠",
-  "🤔",
-  "😴",
-  "😤",
-  "😭",
-  "😡",
-  "👍",
-  "👏",
-  "🙏",
-  "🔥",
-  "⭐",
-  "💎",
-  "💰",
-  "⚡",
-  "🎯",
-  "🏆",
-  "🎉",
-];
+const emojiCategories = {
+  Smileys: [
+    "😀",
+    "😁",
+    "😂",
+    "🤣",
+    "😃",
+    "😄",
+    "😅",
+    "😆",
+    "😉",
+    "😊",
+    "😍",
+    "😘",
+    "😗",
+    "😙",
+    "😚",
+    "😋",
+    "😛",
+    "😜",
+    "🤪",
+    "😝",
+    "🤑",
+    "🤗",
+    "🤭",
+    "🤫",
+    "🤔",
+    "🤨",
+    "😐",
+    "😑",
+    "😶",
+    "🙄",
+    "😏",
+    "😣",
+    "😥",
+    "😮",
+    "🤐",
+    "😯",
+    "😪",
+    "😫",
+    "🥱",
+    "😴",
+    "😌",
+    "😛",
+    "😜",
+    "😝",
+    "🤤",
+    "😒",
+    "😓",
+    "😔",
+    "😕",
+    "🙃",
+    "🫠",
+    "🤑",
+    "😲",
+    "☹️",
+    "🙁",
+    "😖",
+    "😞",
+    "😟",
+    "😤",
+    "😢",
+    "😭",
+    "😦",
+    "😧",
+    "😨",
+    "😩",
+    "🤯",
+    "😬",
+    "😰",
+    "😱",
+    "🥵",
+    "🥶",
+    "😳",
+    "🤪",
+    "😵",
+    "😡",
+    "😠",
+    "🤬",
+    "😈",
+    "👿",
+    "💀",
+    "☠️",
+    "🤡",
+  ],
+  People: [
+    "👍",
+    "👎",
+    "👏",
+    "🙌",
+    "🙏",
+    "🤝",
+    "🤞",
+    "🤟",
+    "👌",
+    "🤌",
+    "🤏",
+    "✌️",
+    "🤘",
+    "🤙",
+    "🫶",
+    "💪",
+    "👊",
+    "✊",
+    "🤛",
+    "🤜",
+    "💅",
+    "👋",
+    "🤚",
+    "🖐️",
+    "✋",
+    "🙋",
+    "🙆",
+    "🙇",
+    "🧑‍💻",
+    "🧑‍🎓",
+    "🧑‍🚀",
+  ],
+  Animals: ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐵", "🐸", "🦄"],
+  Food: ["🍏", "🍎", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍈", "🍒", "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🥑", "🍔", "🍟", "🍕", "🌭", "🥪", "🌮", "🌯", "🥗"],
+  Activities: ["⚽", "🏀", "🏈", "⚾", "🎾", "🏐", "🏉", "🎱", "🏓", "🏒", "🏑", "🥍", "🥅", "⛳", "🏹", "🥊", "🥋", "🎽", "🛹", "🛼", "🛷", "🎿", "⛷️", "🏂"],
+  Travel: ["✈️", "🚗", "🚕", "🚙", "🚌", "🚎", "🏎️", "🚓", "🚑", "🚒", "🚐", "🛻", "🚚", "🚛", "🚜", "🚲", "🛵", "🏍️", "🛺", "🚨", "🚔", "🚍", "🚘", "🚖"],
+  Objects: ["⌚", "📱", "💻", "⌨️", "🖥️", "🖨️", "🕹️", "🗜️", "💽", "💾", "💿", "📀", "📷", "📸", "🎥", "📺", "📻", "📡", "🔋", "🔌", "💡", "🔦", "🕯️"],
+  Symbols: ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "☮️", "✝️", "☪️", "🕉️", "☸️", "✡️", "🔯", "🕎"],
+} as const;
+
+type EmojiCategory = keyof typeof emojiCategories;
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -58,6 +157,8 @@ export default function ChatWidget() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [adminStatus, setAdminStatus] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [emojiCategory, setEmojiCategory] =
+    useState<EmojiCategory>("Smileys");
 
   const fetchViewer = useCallback(async () => {
     try {
@@ -311,23 +412,43 @@ export default function ChatWidget() {
                 className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30 disabled:cursor-not-allowed disabled:bg-slate-100"
               />
               {showEmojiPicker && (
-                <div className="absolute bottom-full right-0 mb-2 w-60 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
-                  <div className="text-[11px] uppercase tracking-[0.3em] text-emerald-500">
-                    Emojis
+                <div className="absolute bottom-full right-0 mb-2 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+                  <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-emerald-500">
+                    <span>Emojis</span>
+                    <div className="flex gap-2 overflow-x-auto text-[10px] normal-case tracking-normal">
+                      {(Object.keys(emojiCategories) as EmojiCategory[]).map(
+                        (category) => (
+                          <button
+                            type="button"
+                            key={category}
+                            onClick={() => setEmojiCategory(category)}
+                            className={`rounded-full px-2 py-1 ${
+                              emojiCategory === category
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {category}
+                          </button>
+                        )
+                      )}
+                    </div>
                   </div>
-                  <div className="mt-2 grid grid-cols-6 gap-1 text-xl">
-                    {EMOJIS.map((emoji) => (
-                      <button
-                        type="button"
-                        key={emoji}
-                        onClick={() =>
-                          setInput((prev) => (prev + emoji).slice(0, MAX_LEN))
-                        }
-                        className="rounded-lg bg-slate-50 py-1 hover:bg-slate-100"
-                      >
-                        {emoji}
-                      </button>
-                    ))}
+                  <div className="mt-2 max-h-48 overflow-y-auto">
+                    <div className="grid grid-cols-6 gap-1 text-xl">
+                      {emojiCategories[emojiCategory].map((emoji) => (
+                        <button
+                          type="button"
+                          key={emoji}
+                          onClick={() =>
+                            setInput((prev) => (prev + emoji).slice(0, MAX_LEN))
+                          }
+                          className="rounded-lg bg-slate-50 py-1 hover:bg-slate-100"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}

@@ -4,6 +4,8 @@ import { authCookieOptions, verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const MAX_RAIN_AMOUNT = 5000;
+const MIN_RAIN_DURATION = 1;
+const MAX_RAIN_DURATION = 120;
 
 const computeLevel = (balance: number, pending: number) =>
   Math.max(1, Math.floor((balance + pending) / 100) + 1);
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  let payload: { amount?: number } = {};
+  let payload: { amount?: number; durationMinutes?: number } = {};
   try {
     payload = await req.json();
   } catch {
@@ -50,6 +52,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const durationMinutes = Math.max(
+    MIN_RAIN_DURATION,
+    Math.min(
+      MAX_RAIN_DURATION,
+      Math.round(Number(payload.durationMinutes ?? 5))
+    )
+  );
+
+  const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
+
   const rain = await prisma.$transaction(async (tx) => {
     await tx.rainEvent.updateMany({
       where: { isActive: true },
@@ -61,12 +73,14 @@ export async function POST(req: NextRequest) {
         amount,
         createdById: admin.id,
         isActive: true,
+        durationMinutes,
+        expiresAt,
       },
     });
 
     await tx.chatMessage.create({
       data: {
-        content: `🌧️ Rain started by ${admin.username}. Claim ${amount} points now!`,
+        content: `🌧️ Rain started by ${admin.username}! Claim ${amount} points each for the next ${durationMinutes} min.`,
         userId: admin.id,
         level: computeLevel(Number(admin.balance), Number(admin.pending)),
       },
@@ -80,6 +94,7 @@ export async function POST(req: NextRequest) {
       id: rain.id,
       amount: rain.amount,
       createdAt: rain.createdAt,
+      durationMinutes: rain.durationMinutes,
     },
   });
 }

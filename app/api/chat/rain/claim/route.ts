@@ -14,13 +14,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const now = new Date();
+  await prisma.rainEvent.updateMany({
+    where: { isActive: true, expiresAt: { lte: now } },
+    data: { isActive: false },
+  });
+
   const [user, rain] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { id: true },
     }),
     prisma.rainEvent.findFirst({
-      where: { isActive: true },
+      where: { isActive: true, expiresAt: { gt: now } },
       orderBy: { createdAt: "desc" },
       select: { id: true, amount: true },
     }),

@@ -16,6 +16,9 @@ type ChatMessage = {
 const MAX_LEN = 230;
 const MAX_TIMEOUT_MINUTES = 1440;
 const DEFAULT_RAIN_AMOUNT = 10;
+const DEFAULT_RAIN_DURATION = 5;
+const MIN_RAIN_DURATION = 1;
+const MAX_RAIN_DURATION = 120;
 const emojiCategories = {
   Smileys: [
     "😀",
@@ -156,6 +159,8 @@ type RainStatus = {
   createdBy: string;
   claims: number;
   claimedByViewer: boolean;
+  durationMinutes: number;
+  expiresAt: string;
 };
 
 export default function ChatWidget() {
@@ -186,7 +191,9 @@ export default function ChatWidget() {
   const [rainMessage, setRainMessage] = useState<string | null>(null);
   const [rainFormOpen, setRainFormOpen] = useState(false);
   const [rainAmount, setRainAmount] = useState(DEFAULT_RAIN_AMOUNT);
+  const [rainDuration, setRainDuration] = useState(DEFAULT_RAIN_DURATION);
   const [rainSubmitting, setRainSubmitting] = useState(false);
+  const [rainCountdown, setRainCountdown] = useState<string | null>(null);
 
   const fetchViewer = useCallback(async () => {
     try {
@@ -234,6 +241,9 @@ export default function ChatWidget() {
       }
       const data = await response.json();
       setRain(data.rain);
+      if (!data.rain) {
+        setRainCountdown(null);
+      }
     } catch (error) {
       console.error("Rain fetch failed", error);
     }
@@ -265,6 +275,36 @@ export default function ChatWidget() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!rain) {
+      setRainCountdown(null);
+      return;
+    }
+
+    const updateCountdown = () => {
+      const remaining = new Date(rain.expiresAt).getTime() - Date.now();
+      if (remaining <= 0) {
+        setRainCountdown("Expired");
+        fetchRain();
+        return false;
+      }
+      const minutes = Math.floor(remaining / 60000);
+      const seconds = Math.floor((remaining % 60000) / 1000);
+      setRainCountdown(`${minutes}:${seconds.toString().padStart(2, "0")}`);
+      return true;
+    };
+
+    updateCountdown();
+    const intervalId = window.setInterval(() => {
+      const stillRunning = updateCountdown();
+      if (!stillRunning) {
+        window.clearInterval(intervalId);
+      }
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [rain, fetchRain]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -467,12 +507,20 @@ export default function ChatWidget() {
       1,
       Math.min(5000, Math.round(rainAmount || 1))
     );
+    const normalizedDuration = Math.max(
+      MIN_RAIN_DURATION,
+      Math.min(MAX_RAIN_DURATION, Math.round(rainDuration || DEFAULT_RAIN_DURATION))
+    );
     setRainAmount(normalizedAmount);
+    setRainDuration(normalizedDuration);
     try {
       const response = await fetch("/api/chat/rain/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: normalizedAmount }),
+        body: JSON.stringify({
+          amount: normalizedAmount,
+          durationMinutes: normalizedDuration,
+        }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -490,9 +538,14 @@ export default function ChatWidget() {
     }
   };
 
-  const canClaimRain = Boolean(rain && viewer && !rain.claimedByViewer);
+  const rainExpired = rainCountdown === "Expired";
+  const canClaimRain = Boolean(
+    rain && viewer && !rain.claimedByViewer && !rainExpired
+  );
   const rainButtonLabel = !rain
     ? ""
+    : rainExpired
+    ? "Rain ended"
     : !viewer
     ? "Login to claim"
     : rain.claimedByViewer
@@ -536,6 +589,7 @@ export default function ChatWidget() {
                   type="button"
                   onClick={() => {
                     setRainAmount(DEFAULT_RAIN_AMOUNT);
+                    setRainDuration(DEFAULT_RAIN_DURATION);
                     setRainFormOpen(true);
                   }}
                   className="rounded-full border border-emerald-200 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-600 hover:border-emerald-400"
@@ -623,13 +677,16 @@ export default function ChatWidget() {
                     Claim {Number(rain.amount).toFixed(0)} points
                   </p>
                   <p className="text-[11px] text-emerald-700">
-                    Started by {rain.createdBy} · {rain.claims} claimed
+                    Started by {rain.createdBy} · {rain.claims} claimed · Ends in{" "}
+                    {rainCountdown ?? "--:--"}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleClaimRain}
-                  disabled={!viewer || rain.claimedByViewer || claimingRain}
+                  disabled={
+                    !viewer || rain.claimedByViewer || claimingRain || rainExpired
+                  }
                   className="rounded-full border border-emerald-600 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-700 transition enabled:hover:bg-emerald-600 enabled:hover:text-white disabled:cursor-not-allowed disabled:border-emerald-200 disabled:text-emerald-300"
                 >
                   {rainButtonLabel}
@@ -922,7 +979,29 @@ export default function ChatWidget() {
                   step={1}
                   value={rainAmount}
                   onChange={(event) =>
-                    setRainAmount(Math.max(1, Number(event.target.value)))
+                    setRainAmount(
+                      Math.min(5000, Math.max(1, Number(event.target.value)))
+                    )
+                  }
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                  disabled={rainSubmitting}
+                />
+              </label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Duration (minutes)
+                <input
+                  type="number"
+                  min={MIN_RAIN_DURATION}
+                  max={MAX_RAIN_DURATION}
+                  step={1}
+                  value={rainDuration}
+                  onChange={(event) =>
+                    setRainDuration(
+                      Math.min(
+                        MAX_RAIN_DURATION,
+                        Math.max(MIN_RAIN_DURATION, Number(event.target.value))
+                      )
+                    )
                   }
                   className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
                   disabled={rainSubmitting}

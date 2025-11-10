@@ -50,6 +50,8 @@ model RainEvent {
   id          String      @id @default(cuid())
   amount      Float
   isActive    Boolean     @default(true)
+  durationMinutes Int     @default(5)
+  expiresAt   DateTime
   createdAt   DateTime    @default(now())
   createdBy   User?       @relation("RainCreated", fields: [createdById], references: [id])
   createdById String?

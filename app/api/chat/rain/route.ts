@@ -10,13 +10,21 @@ export async function GET(req: NextRequest) {
     req.cookies.get(authCookieOptions.name)?.value;
   const viewerId = verifyToken(token);
 
+  const now = new Date();
+  await prisma.rainEvent.updateMany({
+    where: { isActive: true, expiresAt: { lte: now } },
+    data: { isActive: false },
+  });
+
   const rain = await prisma.rainEvent.findFirst({
-    where: { isActive: true },
+    where: { isActive: true, expiresAt: { gt: now } },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
       amount: true,
       createdAt: true,
+      durationMinutes: true,
+      expiresAt: true,
       createdBy: { select: { username: true } },
       _count: { select: { claims: true } },
     },
@@ -40,6 +48,8 @@ export async function GET(req: NextRequest) {
       id: rain.id,
       amount: rain.amount,
       createdAt: rain.createdAt,
+      durationMinutes: rain.durationMinutes,
+      expiresAt: rain.expiresAt,
       createdBy: rain.createdBy?.username ?? "Admin",
       claims: rain._count.claims,
       claimedByViewer,

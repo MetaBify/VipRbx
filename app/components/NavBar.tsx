@@ -197,6 +197,23 @@ const NavBar = () => {
     <nav className="bg-[#dee1e3] fixed top-0 left-0 right-0 py-3 px-3 lg:px-6 z-50 shadow-md">
       <div className="flex w-full items-center justify-between gap-3">
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleMenuToggle}
+            className="text-[#393b3d] text-2xl lg:hidden"
+            aria-label="Open navigation"
+          >
+            <FaBars />
+          </button>
+          <Link href="/" className="lg:hidden">
+            <Image
+              width={48}
+              height={48}
+              src={logoSrc}
+              alt="Logo"
+              className="h-10 w-10 cursor-pointer object-contain drop-shadow-md"
+              priority
+            />
+          </Link>
           <div className="hidden lg:flex items-center gap-6">
             <Link href="/">
               <Image
@@ -304,20 +321,6 @@ const NavBar = () => {
               </>
             )}
           </div>
-          <Link href="/" className="lg:hidden">
-            <Image
-              width={48}
-              height={48}
-              src={logoSrc}
-              alt="Logo"
-              className="h-10 w-10 cursor-pointer object-contain drop-shadow-md"
-              priority
-            />
-          </Link>
-          <FaBars
-            onClick={handleMenuToggle}
-            className="text-[#393b3d] text-2xl cursor-pointer lg:hidden"
-          />
         </div>
       </div>
 

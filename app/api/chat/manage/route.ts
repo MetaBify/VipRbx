@@ -5,9 +5,11 @@ import { prisma } from "@/lib/prisma";
 
 type Payload =
   | { action: "delete"; messageId: string }
-  | { action: "timeout"; userId: string; minutes?: number };
+  | { action: "timeout"; userId: string; minutes?: number; reason?: string }
+  | { action: "untimeout"; userId: string };
 
 const MAX_TIMEOUT_MINUTES = 1440; // 24 hours
+const MAX_REASON_LENGTH = 200;
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
@@ -50,6 +52,13 @@ export async function POST(req: NextRequest) {
     if (!payload.userId) {
       return NextResponse.json({ error: "userId required" }, { status: 400 });
     }
+    const reason = (payload.reason ?? "").slice(0, MAX_REASON_LENGTH).trim();
+    if (!reason) {
+      return NextResponse.json(
+        { error: "Reason is required for timeouts." },
+        { status: 400 }
+      );
+    }
 
     const timeoutMinutes = Math.min(
       MAX_TIMEOUT_MINUTES,
@@ -58,15 +67,78 @@ export async function POST(req: NextRequest) {
 
     const mutedUntil = new Date(Date.now() + timeoutMinutes * 60 * 1000);
 
-    await prisma.user.update({
-      where: { id: payload.userId },
-      data: { chatMutedUntil: mutedUntil },
+    const [target, actorUser] = await Promise.all([
+      prisma.user.update({
+        where: { id: payload.userId },
+        data: { chatMutedUntil: mutedUntil },
+        select: { username: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: actor.id },
+        select: { balance: true, pending: true, username: true },
+      }),
+    ]);
+
+    const actorLevel = actorUser
+      ? Math.max(
+          1,
+          Math.floor(
+            (Number(actorUser.balance) + Number(actorUser.pending)) / 100
+          ) + 1
+        )
+      : 1;
+    const actorName = actorUser?.username ?? "Admin";
+
+    await prisma.chatMessage.create({
+      data: {
+        content: `🔇 ${target.username} was muted by ${actorName} for ${timeoutMinutes} min — ${reason}`,
+        userId: actor.id,
+        level: actorLevel,
+      },
     });
 
     return NextResponse.json({
       status: "muted",
       mutedUntil,
     });
+  }
+
+  if (payload.action === "untimeout") {
+    if (!payload.userId) {
+      return NextResponse.json({ error: "userId required" }, { status: 400 });
+    }
+
+    const [target, actorUser] = await Promise.all([
+      prisma.user.update({
+        where: { id: payload.userId },
+        data: { chatMutedUntil: null },
+        select: { username: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: actor.id },
+        select: { balance: true, pending: true, username: true },
+      }),
+    ]);
+
+    const actorLevel = actorUser
+      ? Math.max(
+          1,
+          Math.floor(
+            (Number(actorUser.balance) + Number(actorUser.pending)) / 100
+          ) + 1
+        )
+      : 1;
+    const actorName = actorUser?.username ?? "Admin";
+
+    await prisma.chatMessage.create({
+      data: {
+        content: `✅ ${actorName} lifted the mute for ${target.username}.`,
+        userId: actor.id,
+        level: actorLevel,
+      },
+    });
+
+    return NextResponse.json({ status: "unmuted" });
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });

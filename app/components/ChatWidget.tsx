@@ -14,6 +14,7 @@ type ChatMessage = {
 };
 
 const MAX_LEN = 230;
+const MAX_TIMEOUT_MINUTES = 1440;
 const emojiCategories = {
   Smileys: [
     "😀",
@@ -141,6 +142,12 @@ const emojiCategories = {
 } as const;
 
 type EmojiCategory = keyof typeof emojiCategories;
+type TimeoutFormState = {
+  userId: string;
+  username: string;
+  minutes: number;
+  reason: string;
+};
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -159,6 +166,12 @@ export default function ChatWidget() {
   const [isMobile, setIsMobile] = useState(false);
   const [emojiCategory, setEmojiCategory] =
     useState<EmojiCategory>("Smileys");
+  const [timeoutForm, setTimeoutForm] = useState<TimeoutFormState | null>(null);
+  const [timeoutSubmitting, setTimeoutSubmitting] = useState(false);
+  const emojiEntries = useMemo(
+    () => Object.entries(emojiCategories) as [EmojiCategory, readonly string[]][],
+    []
+  );
 
   const fetchViewer = useCallback(async () => {
     try {
@@ -260,11 +273,6 @@ export default function ChatWidget() {
     }
   };
 
-  const buttonLabel = useMemo(() => {
-    if (!open) return "Open chat";
-    return `Global chat (${messages.length})`;
-  }, [open, messages.length]);
-
   const handleDelete = async (messageId: string) => {
     if (!viewer?.isAdmin) return;
     setAdminStatus(null);
@@ -287,8 +295,12 @@ export default function ChatWidget() {
     }
   };
 
-  const handleTimeout = async (targetUserId: string, minutes = 60) => {
-    if (!viewer?.isAdmin) return;
+  const handleTimeout = async (
+    targetUserId: string,
+    minutes: number,
+    reason: string
+  ) => {
+    if (!viewer?.isAdmin) return false;
     setAdminStatus(null);
     try {
       const response = await fetch("/api/chat/manage", {
@@ -298,17 +310,73 @@ export default function ChatWidget() {
           action: "timeout",
           userId: targetUserId,
           minutes,
+          reason,
         }),
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         setAdminStatus(data.error ?? "Failed to timeout user.");
-        return;
+        return false;
       }
       setAdminStatus(`User muted for ${minutes} min.`);
+      return true;
     } catch (error) {
       console.error(error);
       setAdminStatus("Network error while muting user.");
+      return false;
+    }
+  };
+
+  const handleRelease = async (targetUserId: string) => {
+    if (!viewer?.isAdmin) return;
+    setAdminStatus(null);
+    try {
+      const response = await fetch("/api/chat/manage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "untimeout",
+          userId: targetUserId,
+        }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setAdminStatus(data.error ?? "Failed to lift mute.");
+        return;
+      }
+      setAdminStatus("User mute removed.");
+    } catch (error) {
+      console.error(error);
+      setAdminStatus("Network error while lifting mute.");
+    }
+  };
+
+  const closeTimeoutForm = () => {
+    if (timeoutSubmitting) return;
+    setTimeoutForm(null);
+  };
+
+  const handleTimeoutSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!timeoutForm) return;
+    const trimmedReason = timeoutForm.reason.trim();
+    if (!trimmedReason) {
+      setAdminStatus("Reason is required.");
+      return;
+    }
+    const minutes = Math.min(
+      MAX_TIMEOUT_MINUTES,
+      Math.max(1, Math.round(timeoutForm.minutes || 1))
+    );
+    setTimeoutSubmitting(true);
+    const success = await handleTimeout(
+      timeoutForm.userId,
+      minutes,
+      trimmedReason
+    );
+    setTimeoutSubmitting(false);
+    if (success) {
+      setTimeoutForm(null);
     }
   };
 
@@ -363,7 +431,7 @@ export default function ChatWidget() {
                   <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600">
                     <span className="flex flex-wrap items-center gap-1">
                       <span className="text-[11px]">
-                        {message.username} · Lv {message.level}
+                        {message.username} • Lv {message.level}
                       </span>
                       {message.isAdmin && (
                         <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold uppercase text-emerald-700">
@@ -378,14 +446,28 @@ export default function ChatWidget() {
                           onClick={() => handleDelete(message.id)}
                           className="rounded-full border border-slate-200 px-2 py-0.5 text-rose-600 hover:border-rose-400"
                         >
-                          🗑️
+                          Del
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleTimeout(message.userId, 60)}
+                          onClick={() =>
+                            setTimeoutForm({
+                              userId: message.userId,
+                              username: message.username,
+                              minutes: 60,
+                              reason: "",
+                            })
+                          }
                           className="rounded-full border border-slate-200 px-2 py-0.5 text-amber-600 hover:border-amber-400"
                         >
-                          ⏱️
+                          Mute
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRelease(message.userId)}
+                          className="rounded-full border border-slate-200 px-2 py-0.5 text-emerald-600 hover:border-emerald-400"
+                        >
+                          Lift
                         </button>
                       </div>
                     )}
@@ -416,27 +498,25 @@ export default function ChatWidget() {
                   <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-emerald-500">
                     <span>Emojis</span>
                     <div className="flex gap-2 overflow-x-auto text-[10px] normal-case tracking-normal">
-                      {(Object.keys(emojiCategories) as EmojiCategory[]).map(
-                        (category) => (
-                          <button
-                            type="button"
-                            key={category}
-                            onClick={() => {
-                              const section = document.getElementById(
-                                `emoji-${category}`
-                              );
-                              section?.scrollIntoView({ behavior: "smooth" });
-                            }}
-                            className={`rounded-full px-2 py-1 ${
-                              emojiCategory === category
-                                ? "bg-emerald-100 text-emerald-700"
-                                : "bg-slate-100 text-slate-500"
-                            }`}
-                          >
-                            {category}
-                          </button>
-                        )
-                      )}
+                      {emojiEntries.map(([category]) => (
+                        <button
+                          type="button"
+                          key={category}
+                          onClick={() => {
+                            const section = document.getElementById(
+                              `emoji-${category}`
+                            );
+                            section?.scrollIntoView({ behavior: "smooth" });
+                          }}
+                          className={`rounded-full px-2 py-1 ${
+                            emojiCategory === category
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          {category}
+                        </button>
+                      ))}
                     </div>
                   </div>
                   <div
@@ -462,7 +542,7 @@ export default function ChatWidget() {
                       }
                     }}
                   >
-                    {Object.entries(emojiCategories).map(([category, emojis]) => (
+                    {emojiEntries.map(([category, emojis]) => (
                       <div
                         key={category}
                         id={`emoji-${category}`}
@@ -543,6 +623,98 @@ export default function ChatWidget() {
             className="object-contain"
           />
         </button>
+      )}
+      {timeoutForm && viewer?.isAdmin && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-900/40 px-4"
+          onClick={closeTimeoutForm}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">
+                  Mute {timeoutForm.username}
+                </p>
+                <p className="text-xs text-slate-500">
+                  Choose a duration and reason. The reason is sent to chat.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeTimeoutForm}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-500 hover:bg-slate-200"
+                aria-label="Close mute form"
+                disabled={timeoutSubmitting}
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleTimeoutSubmit} className="mt-4 space-y-3">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Duration (minutes)
+                <input
+                  type="number"
+                  min={1}
+                  max={MAX_TIMEOUT_MINUTES}
+                  value={timeoutForm.minutes}
+                  onChange={(event) =>
+                    setTimeoutForm((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            minutes: Number(event.target.value),
+                          }
+                        : prev
+                    )
+                  }
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                  disabled={timeoutSubmitting}
+                />
+              </label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Reason (shows in chat)
+                <textarea
+                  rows={3}
+                  maxLength={200}
+                  value={timeoutForm.reason}
+                  onChange={(event) =>
+                    setTimeoutForm((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            reason: event.target.value.slice(0, 200),
+                          }
+                        : prev
+                    )
+                  }
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                  placeholder="Explain the mute..."
+                  disabled={timeoutSubmitting}
+                />
+              </label>
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={closeTimeoutForm}
+                  className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:border-slate-400 disabled:opacity-70"
+                  disabled={timeoutSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full bg-amber-500 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white shadow hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-amber-400"
+                  disabled={timeoutSubmitting}
+                >
+                  {timeoutSubmitting ? "Muting..." : "Mute user"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </>
   );

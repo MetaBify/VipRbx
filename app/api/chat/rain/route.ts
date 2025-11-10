@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       amount: true,
       createdAt: true,
       createdBy: { select: { username: true } },
-      _count: { claims: true },
+      _count: { select: { claims: true } },
     },
   });
 

@@ -1,0 +1,103 @@
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { authCookieOptions, verifyToken } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export async function GET(req: NextRequest) {
+  const cookieStore = await cookies();
+  const token =
+    cookieStore.get(authCookieOptions.name)?.value ??
+    req.cookies.get(authCookieOptions.name)?.value;
+
+  const userId = verifyToken(token);
+  if (!userId) {
+    return NextResponse.json({ user: null }, { status: 200 });
+  }
+
+  const now = new Date();
+
+  const maturedLeads = await prisma.offerLead.findMany({
+    where: {
+      userId,
+      status: "PENDING",
+      availableAt: { lte: now },
+    },
+    select: { id: true, points: true },
+  });
+
+  if (maturedLeads.length) {
+    const leadIds = maturedLeads.map((lead) => lead.id);
+    const credit = maturedLeads.reduce(
+      (total, lead) => total + Number(lead.points),
+      0
+    );
+
+    await prisma.$transaction([
+      prisma.offerLead.updateMany({
+        where: { id: { in: leadIds } },
+        data: { status: "AVAILABLE", awardedAt: now },
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          balance: { increment: credit },
+          pending: { decrement: credit },
+        },
+      }),
+    ]);
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      leads: {
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      },
+    },
+  });
+
+  if (!user) {
+    return NextResponse.json({ user: null }, { status: 200 });
+  }
+
+  const formatPoints = (value: unknown) =>
+    Number.parseFloat(Number(value ?? 0).toFixed(2));
+
+  const leads = user.leads.map((lead) => ({
+    id: lead.id,
+    offerId: lead.offerId,
+    points: formatPoints(lead.points),
+    status: lead.status,
+    availableAt: lead.availableAt,
+    createdAt: lead.createdAt,
+    awardedAt: lead.awardedAt,
+  }));
+
+  const balancePoints = formatPoints(user.balance);
+  const pendingPoints = Math.max(0, formatPoints(user.pending));
+
+  const availablePoints = leads
+    .filter((lead) => lead.status === "AVAILABLE")
+    .reduce((total, lead) => total + lead.points, 0);
+  const level = Math.max(
+    1,
+    Math.floor((balancePoints + pendingPoints) / 100) + 1
+  );
+
+  return NextResponse.json({
+    user: {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      balance: balancePoints,
+      pending: pendingPoints,
+      availablePoints: formatPoints(availablePoints),
+      totalPoints: formatPoints(balancePoints + pendingPoints),
+      level,
+      isAdmin: user.isAdmin,
+      chatMutedUntil: user.chatMutedUntil,
+      leads,
+    },
+  });
+}

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import NavBar from "./components/NavBar";
 import Script from "next/script";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/react";
+import { Analytics } from "@vercel/analytics/next";
 import ClickTracker from "./components/ClickTracker";
 import AntiAdblockPopup from "./components/AntiAdblockPopup";
 import ChatWidget from "./components/ChatWidget";

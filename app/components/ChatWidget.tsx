@@ -462,9 +462,7 @@ export default function ChatWidget() {
                       }
                     }}
                   >
-                    {(
-                      Object.entries(emojiCategories) as [EmojiCategory, string[]][]
-                    ).map(([category, emojis]) => (
+                    {Object.entries(emojiCategories).map(([category, emojis]) => (
                       <div
                         key={category}
                         id={`emoji-${category}`}

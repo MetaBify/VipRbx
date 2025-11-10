@@ -8,8 +8,6 @@ const MAX_STORED_MESSAGES = 20;
 const WINDOW_MESSAGES = 20;
 
 const urlPattern = /(https?:\/\/|www\.)/i;
-const fancyCharPattern =
-  /[\u2460-\u24FF\u2500-\u2BFF\u1D00-\u1D7F\u1D400-\u1D7FF\uFF00-\uFFEF]/u;
 
 const bannedWords = [
   "fuck",
@@ -34,6 +32,34 @@ const normalizeContent = (value: string) =>
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "");
+
+const isAllowedChar = (char: string) => {
+  const code = char.codePointAt(0);
+  if (!code) {
+    return true;
+  }
+
+  // Allow common whitespace
+  if (code === 10 || code === 13 || code === 32) {
+    return true;
+  }
+
+  // Allow standard ASCII printable range
+  if (code >= 33 && code <= 126) {
+    return true;
+  }
+
+  // Allow typical emoji ranges
+  if (
+    (code >= 0x1f000 && code <= 0x1ffff) ||
+    (code >= 0x2700 && code <= 0x27bf) ||
+    (code >= 0x2600 && code <= 0x26ff)
+  ) {
+    return true;
+  }
+
+  return false;
+};
 
 const computeLevel = (balance: number, pending: number) =>
   Math.max(1, Math.floor((balance + pending) / 100) + 1);
@@ -99,7 +125,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (fancyCharPattern.test(content)) {
+  const hasUnsupported = Array.from(content).some(
+    (char) => !isAllowedChar(char)
+  );
+  if (hasUnsupported) {
     return NextResponse.json(
       { error: "Unsupported characters detected. Use standard text or emoji." },
       { status: 400 }

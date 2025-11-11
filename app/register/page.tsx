@@ -32,6 +32,9 @@ export default function RegisterPage() {
 
       router.push("/offers");
       router.refresh();
+      if (typeof window !== "undefined") {
+        window.location.href = "/offers";
+      }
     } catch (err) {
       console.error(err);
       setError("Something went wrong while creating your account.");

@@ -28,6 +28,7 @@ export type UserSummary = {
   isAdmin: boolean;
   chatMutedUntil?: string | null;
   leads: LeadSummary[];
+  signupBonusAwarded: boolean;
 };
 
 type StoreState = {
@@ -35,6 +36,7 @@ type StoreState = {
   loading: boolean;
   needsAuth: boolean;
   error: string | null;
+  bonusJustGranted: boolean;
 };
 
 const listeners = new Set<() => void>();
@@ -43,6 +45,7 @@ let state: StoreState = {
   loading: true,
   needsAuth: false,
   error: null,
+  bonusJustGranted: false,
 };
 
 const emit = () => {
@@ -68,15 +71,12 @@ const updateUserState = (
   setState({
     user: nextValue,
     needsAuth: nextValue ? false : state.needsAuth,
+    bonusJustGranted: nextValue ? state.bonusJustGranted : false,
   });
 };
 
 const fetchUser = async () => {
-  if (state.loading) {
-    setState({ error: null });
-  } else {
-    setState({ loading: true, error: null });
-  }
+  setState({ loading: true, error: null });
 
   try {
     const response = await fetch("/api/user/me", { cache: "no-store" });
@@ -90,6 +90,7 @@ const fetchUser = async () => {
         user: null,
         needsAuth: true,
         loading: false,
+        bonusJustGranted: false,
       });
       return;
     }
@@ -98,6 +99,7 @@ const fetchUser = async () => {
       user: data.user,
       needsAuth: false,
       loading: false,
+      bonusJustGranted: Boolean(data.bonusJustGranted),
     });
   } catch (error) {
     console.error(error);
@@ -106,6 +108,7 @@ const fetchUser = async () => {
       needsAuth: true,
       loading: false,
       error: "Unable to fetch user details right now.",
+      bonusJustGranted: false,
     });
   }
 };
@@ -161,5 +164,6 @@ export function useUserSummary() {
     ...snapshot,
     refresh,
     setUser,
+    acknowledgeBonus: () => setState({ bonusJustGranted: false }),
   };
 }

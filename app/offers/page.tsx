@@ -461,22 +461,13 @@ export default function VerifyPage() {
           const isChecking = offerState?.status === "checking";
           const hasFailed = offerState?.status === "failed";
           let buttonLabel = "Start offer";
-          if (isChecking && offerState?.endAt) {
-            const secondsLeft = Math.max(
-              0,
-              Math.ceil((offerState.endAt - now) / 1000)
-            );
-            const minutes = Math.floor(secondsLeft / 60)
-              .toString()
-              .padStart(2, "0");
-            const seconds = (secondsLeft % 60).toString().padStart(2, "0");
-            buttonLabel = `Checking ${minutes}:${seconds}`;
-          } else if (isChecking) {
-            buttonLabel = "Checking...";
+          let buttonLabel = "Start offer";
+          if (isChecking) {
+            buttonLabel = "Checking…";
           }
 
           const buttonClasses = isChecking
-            ? "mt-4 w-full rounded-full border-4 border-white bg-slate-400 py-2 text-sm font-semibold text-white cursor-not-allowed"
+            ? "mt-4 w-full rounded-full border-4 border-white bg-slate-400 py-2 text-sm font-semibold text-white transition hover:bg-slate-500"
             : "mt-4 w-full rounded-full border-4 border-white bg-emerald-500 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600";
 
           return (

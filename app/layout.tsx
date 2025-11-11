@@ -6,10 +6,24 @@ import { Analytics } from "@vercel/analytics/next";
 import ClickTracker from "./components/ClickTracker";
 import AntiAdblockPopup from "./components/AntiAdblockPopup";
 import ChatWidget from "./components/ChatWidget";
+import SignupPromoPopup from "./components/SignupPromoPopup";
+import SignupBonusPopup from "./components/SignupBonusPopup";
 
-const siteTitle = "VipRbx | Earn Robux by Completing Offers";
+const siteTitle = "VipRbx | Earn Free Robux by Completing Trusted Offers";
 const siteDescription =
-  "Complete curated offers, earn points, and cash out for Robux gift cards and other rewards with VipRbx's community-driven dashboard.";
+  "Complete verified surveys, app installs, and tasks to earn points that you can cash out for Robux gift cards and other rewards on VipRbx—no scams, just consistent payouts.";
+const siteKeywords = [
+  "earn robux",
+  "free robux",
+  "robux gift card",
+  "robux offers",
+  "roblox rewards",
+  "robux payout",
+  "offerwall robux",
+  "withdraw robux",
+  "cash out robux",
+  "viprbx",
+];
 
 export const metadata: Metadata = {
   metadataBase:
@@ -18,17 +32,7 @@ export const metadata: Metadata = {
       : undefined,
   title: siteTitle,
   description: siteDescription,
-  keywords: [
-    "earn robux",
-    "free robux",
-    "robux offers",
-    "robux rewards",
-    "robux payout",
-    "robux withdraw",
-    "complete offers robux",
-    "roblox rewards",
-    "viprbx",
-  ],
+  keywords: siteKeywords,
   openGraph: {
     title: siteTitle,
     description: siteDescription,
@@ -50,8 +54,48 @@ export const metadata: Metadata = {
     description: siteDescription,
     images: ["/images/roblox-logo.png"],
   },
+  robots: {
+    index: true,
+    follow: true,
+    nocache: false,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-video-preview": -1,
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: "/offers",
+  },
+  category: "technology",
   icons: {
     icon: [{ rel: "icon", url: "/images/web-logo.png", sizes: "any" }],
+  },
+};
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "VipRbx",
+  url:
+    typeof process !== "undefined" && process.env.NEXT_PUBLIC_BASE_URL
+      ? process.env.NEXT_PUBLIC_BASE_URL
+      : "https://viprbx.com",
+  description: siteDescription,
+  keywords: siteKeywords.join(", "),
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate:
+        (typeof process !== "undefined" &&
+        process.env.NEXT_PUBLIC_BASE_URL
+          ? process.env.NEXT_PUBLIC_BASE_URL
+          : "https://viprbx.com") + "/offers?q={search_term_string}",
+    },
+    "query-input": "required name=search_term_string",
   },
 };
 
@@ -63,6 +107,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationSchema),
+          }}
+        />
         <Script
           id="popunder-ads"
           type="text/javascript"
@@ -91,6 +141,8 @@ export default function RootLayout({
         <Analytics />
 
         <AntiAdblockPopup />
+        <SignupPromoPopup />
+        <SignupBonusPopup />
         <NavBar />
         <ChatWidget />
         <ClickTracker>{children}</ClickTracker>

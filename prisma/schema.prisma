@@ -17,6 +17,7 @@ model User {
   pending    Float       @default(0)
   isAdmin    Boolean     @default(false)
   chatMutedUntil DateTime?
+  signupBonusAwarded Boolean @default(false)
   leads      OfferLead[]
   messages   ChatMessage[]
   rainEvents RainEvent[] @relation("RainCreated")

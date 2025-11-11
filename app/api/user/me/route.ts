@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { authCookieOptions, verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+const SIGNUP_BONUS_POINTS = 5;
+
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
   const token =
@@ -77,7 +79,7 @@ export async function GET(req: NextRequest) {
     ]);
   }
 
-  const user = await prisma.user.findUnique({
+  let user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
       leads: {
@@ -89,6 +91,25 @@ export async function GET(req: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ user: null }, { status: 200 });
+  }
+
+  let bonusJustGranted = false;
+
+  if (!user.signupBonusAwarded) {
+    user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        balance: { increment: SIGNUP_BONUS_POINTS },
+        signupBonusAwarded: true,
+      },
+      include: {
+        leads: {
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
+      },
+    });
+    bonusJustGranted = true;
   }
 
   const formatPoints = (value: unknown) =>
@@ -127,7 +148,9 @@ export async function GET(req: NextRequest) {
       level,
       isAdmin: user.isAdmin,
       chatMutedUntil: user.chatMutedUntil,
+      signupBonusAwarded: user.signupBonusAwarded,
       leads,
     },
+    bonusJustGranted,
   });
 }

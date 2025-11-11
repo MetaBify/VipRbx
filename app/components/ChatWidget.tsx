@@ -1,7 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useUserSummary } from "@/lib/useUserSummary";
 
 type ChatMessage = {
@@ -218,6 +225,9 @@ export default function ChatWidget() {
   const [showMutedList, setShowMutedList] = useState(false);
   const [mutedUsers, setMutedUsers] = useState<MutedUser[]>([]);
   const [mutedLoading, setMutedLoading] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const fetchViewer = useCallback(async () => {
     try {
@@ -244,18 +254,32 @@ export default function ChatWidget() {
     }
   }, []);
 
-  const loadMessages = useCallback(async () => {
-    try {
-      const response = await fetch("/api/chat", { cache: "no-store" });
-      if (!response.ok) {
-        return;
+  const loadMessages = useCallback(
+    async (options?: { markUnreadOnDiff?: boolean }) => {
+      try {
+        const response = await fetch("/api/chat", { cache: "no-store" });
+        if (!response.ok) {
+          return;
+        }
+        const data = await response.json();
+        setMessages((prev) => {
+          if (
+            options?.markUnreadOnDiff &&
+            prev.length &&
+            data.length &&
+            prev[prev.length - 1]?.id !== data[data.length - 1]?.id &&
+            !open
+          ) {
+            setHasUnread(true);
+          }
+          return data;
+        });
+      } catch (error) {
+        console.error("Chat load failed", error);
       }
-      const data = await response.json();
-      setMessages(data);
-    } catch (error) {
-      console.error("Chat load failed", error);
-    }
-  }, []);
+    },
+    [open]
+  );
 
   const fetchRain = useCallback(async () => {
     try {
@@ -301,7 +325,7 @@ export default function ChatWidget() {
     loadMessages();
     fetchRain();
     const interval = window.setInterval(() => {
-      loadMessages();
+      loadMessages({ markUnreadOnDiff: true });
       fetchRain();
     }, 8000);
     return () => window.clearInterval(interval);
@@ -322,6 +346,22 @@ export default function ChatWidget() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    if (open) {
+      setHasUnread(false);
+      setTimeout(() => {
+        setAutoScrollEnabled(true);
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 0);
+    }
+  }, [open, messages.length]);
+
+  useEffect(() => {
+    if (autoScrollEnabled) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, autoScrollEnabled]);
 
   useEffect(() => {
     if (!viewer?.isAdmin) {
@@ -737,7 +777,15 @@ export default function ChatWidget() {
               )}
             </div>
           )}
-          <div className="flex-1 space-y-2 overflow-y-auto px-4 py-3 text-sm">
+          <div
+            className="flex-1 space-y-2 overflow-y-auto px-4 py-3 text-sm"
+            onScroll={(event) => {
+              const { scrollTop, scrollHeight, clientHeight } =
+                event.currentTarget;
+              const isBottom = scrollTop + clientHeight >= scrollHeight - 10;
+              setAutoScrollEnabled(isBottom);
+            }}
+          >
             {messages.length === 0 ? (
               <p className="text-center text-xs text-slate-500">
                 No one has chatted yet. Be the first!
@@ -796,6 +844,14 @@ export default function ChatWidget() {
                 </div>
               ))
             )}
+            <div
+              ref={(node) => {
+                messagesEndRef.current = node;
+                if (node && autoScrollEnabled) {
+                  node.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+            />
           </div>
           {rain && (
             <div className="mx-4 mb-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
@@ -968,7 +1024,7 @@ export default function ChatWidget() {
             isMobile
               ? "bottom-4 right-4 h-14 w-14 sm:right-6"
               : "top-1/2 right-4 h-16 w-16 -translate-y-1/2"
-          } flex items-center justify-center`}
+          } flex items-center justify-center relative`}
           aria-label="Open chat"
         >
           <Image
@@ -978,6 +1034,11 @@ export default function ChatWidget() {
             height={isMobile ? 28 : 32}
             className="object-contain"
           />
+          {hasUnread && (
+            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-rose-500 text-[10px] font-bold text-white">
+              !
+            </span>
+          )}
         </button>
       )}
       {timeoutForm && viewer?.isAdmin && (

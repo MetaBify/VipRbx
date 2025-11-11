@@ -9,20 +9,26 @@ import ChatWidget from "./components/ChatWidget";
 import SignupPromoPopup from "./components/SignupPromoPopup";
 import SignupBonusPopup from "./components/SignupBonusPopup";
 
-const siteTitle = "VipRbx | Earn Free Robux by Completing Trusted Offers";
+const siteTitle = "VIPRBX | Complete Offers. Earn Robux. Simple.";
 const siteDescription =
-  "Complete verified surveys, app installs, and tasks to earn points that you can cash out for Robux gift cards and other rewards on VipRbx—no scams, just consistent payouts.";
+  "Complete offers, earn points, and redeem Robux instantly. Join VIPRBX today and grab 5 bonus points just for signing up!";
 const siteKeywords = [
+  // 🔹 Short + powerful
   "earn robux",
   "free robux",
-  "robux gift card",
+  "robux payout",
   "robux offers",
   "roblox rewards",
-  "robux payout",
-  "offerwall robux",
-  "withdraw robux",
-  "cash out robux",
+  "robux cashout",
   "viprbx",
+  
+  // 🔹 Long-tail (for SEO boost)
+  "earn robux online",
+  "free robux site",
+  "robux rewards platform",
+  "legit robux site",
+  "robux offerwall",
+  "withdraw robux fast"
 ];
 
 export const metadata: Metadata = {

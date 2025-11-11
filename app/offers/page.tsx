@@ -461,7 +461,6 @@ export default function VerifyPage() {
           const isChecking = offerState?.status === "checking";
           const hasFailed = offerState?.status === "failed";
           let buttonLabel = "Start offer";
-          let buttonLabel = "Start offer";
           if (isChecking) {
             buttonLabel = "Checking…";
           }
@@ -500,7 +499,6 @@ export default function VerifyPage() {
               <button
                 className={buttonClasses}
                 onClick={() => handleStartOffer(ad)}
-                disabled={isChecking}
               >
                 {isChecking && (
                   <span className="mr-2 inline-flex h-3 w-3 animate-spin rounded-full border-2 border-white border-l-transparent" />

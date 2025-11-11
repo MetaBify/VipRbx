@@ -84,42 +84,19 @@ const NavBar = () => {
 
     const loadAvatar = async () => {
       try {
-        const userLookup = await fetch(
-          "https://users.roblox.com/v1/usernames/users",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              usernames: [user.username],
-              excludeBannedUsers: false,
-            }),
-            signal: controller.signal,
-          }
-        );
+        const response = await fetch("/api/roblox/avatar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: user.username }),
+          signal: controller.signal,
+        });
 
-        if (!userLookup.ok) {
-          throw new Error("Username lookup failed");
+        if (!response.ok) {
+          throw new Error("Avatar lookup failed");
         }
 
-        const lookupData = await userLookup.json();
-        const userId = lookupData?.data?.[0]?.id;
-
-        if (!userId) {
-          applyAvatar(null);
-          return;
-        }
-
-        const thumbResponse = await fetch(
-          `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=false`,
-          { signal: controller.signal }
-        );
-
-        if (!thumbResponse.ok) {
-          throw new Error("Avatar thumbnail request failed");
-        }
-
-        const thumbData = await thumbResponse.json();
-        const imageUrl = thumbData?.data?.[0]?.imageUrl ?? null;
+        const data = await response.json();
+        const imageUrl = data?.avatarUrl ?? null;
 
         if (typeof window !== "undefined" && imageUrl) {
           sessionStorage.setItem(cacheKey, imageUrl);

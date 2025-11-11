@@ -21,7 +21,7 @@ export default async function Home() {
               },
               {
                 title: "Claim & withdraw",
-                copy: "Points unlock shortly after completion. Claim them on the Profile or Claim pages and withdraw once you reach 100 points.",
+                copy: "Points unlock shortly after completion. Claim them on the Profile or Claim pages and withdraw once you reach 50 points.",
               },
             ].map((item) => (
               <div key={item.title} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-sm">
@@ -39,7 +39,7 @@ export default async function Home() {
           <ul className="mt-6 space-y-4 text-sm text-white/80">
             <li>&bull; Real-time point tracking with a claim center and withdrawal flow.</li>
             <li>&bull; Points from offer providers convert to about 8 Robux each when redeemed.</li>
-            <li>&bull; No fake username prompts&mdash;just register, sync offers, and redeem when you&#39;re ready.</li>
+            <li>&bull; No fake username prompt. just register, sync offers, and redeem when you&apos;re ready.</li>
           </ul>
         </div>
       </section>

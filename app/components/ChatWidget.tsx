@@ -1020,11 +1020,7 @@ export default function ChatWidget() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className={`fixed z-[9998] rounded-full bg-white shadow-xl ring-2 ring-emerald-400 transition hover:scale-105 ${
-            isMobile
-              ? "bottom-4 right-4 h-14 w-14 sm:right-6"
-              : "bottom-8 right-8 h-16 w-16"
-          } flex items-center justify-center relative`}
+          className="fixed bottom-4 right-4 z-[9998] h-14 w-14 rounded-full bg-white shadow-xl ring-2 ring-emerald-400 transition hover:scale-105 sm:bottom-6 sm:right-6 lg:bottom-8 lg:right-8 lg:h-16 lg:w-16 flex items-center justify-center relative"
           aria-label="Open chat"
         >
           <Image

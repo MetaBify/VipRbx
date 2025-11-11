@@ -1023,7 +1023,7 @@ export default function ChatWidget() {
           className={`fixed z-[9998] rounded-full bg-white shadow-xl ring-2 ring-emerald-400 transition hover:scale-105 ${
             isMobile
               ? "bottom-4 right-4 h-14 w-14 sm:right-6"
-              : "top-1/2 right-4 h-16 w-16 -translate-y-1/2"
+              : "bottom-8 right-8 h-16 w-16"
           } flex items-center justify-center relative`}
           aria-label="Open chat"
         >

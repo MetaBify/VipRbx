@@ -158,7 +158,7 @@ export default function AboutPage() {
               height={200}
               className="w-16 h-16 object-contain"
               alt="TikTok Logo"
-              src="https://toppng.com/uploads/preview/tiktok-logo-png-file-11661637626x4q1wsgcsy.png"
+              src="https://www.logo.wine/a/logo/TikTok/TikTok-Icon-Full-Logo.wine.svg"
               unoptimized
             />
             <div className="flex flex-col">

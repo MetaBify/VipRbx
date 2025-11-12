@@ -932,7 +932,7 @@ const handleSelectNetwork = (network: OfferNetwork) => {
                 )}
                 <p className="text-xs font-semibold text-emerald-600">
                   ~ {estimatedPoints.toFixed(2)} pts (approx.{" "}
-                  {(estimatedPoints * 2).toFixed(2)} Robux)
+                  {(estimatedPoints * 8).toFixed(2)} Robux)
                 </p>
               </div>
 

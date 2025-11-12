@@ -32,7 +32,10 @@ const buildQuery = (
     url.searchParams.set("user_agent", userAgent);
   }
 
-  const country = req.geo?.country ?? req.headers.get("cf-ipcountry") ?? "";
+  const country =
+    (req as unknown as { geo?: { country?: string } })?.geo?.country ??
+    req.headers.get("cf-ipcountry") ??
+    "";
   if (country) {
     url.searchParams.set("country", country);
   }
@@ -93,4 +96,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-

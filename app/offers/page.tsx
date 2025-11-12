@@ -786,7 +786,7 @@ const handleSelectNetwork = (network: OfferNetwork) => {
               type="button"
               key={networkId}
               onClick={() => handleSelectNetwork(networkId)}
-              className={`rounded-3xl bg-gradient-to-r ${config.gradient} p-5 text-left text-white shadow-lg transition hover:scale-[1.01] focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60`}
+              className={`rounded-3xl bg-gradient-to-r ${config.gradient} p-5 text-left text-white shadow-lg transition hover:scale-[1.01] focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60 min-h-[150px] sm:min-h-[170px]`}
             >
               <div className="flex items-center justify-between text-[0.65rem] font-semibold uppercase tracking-[0.25em] sm:text-xs">
                 <span className={`rounded-full px-3 py-1 ${config.badgeColor}`}>
@@ -796,7 +796,7 @@ const handleSelectNetwork = (network: OfferNetwork) => {
                   {config.boost}
                 </span>
               </div>
-              <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="mt-6 flex items-center justify-center sm:justify-start">
                 <Image
                   width={config.logo.width}
                   height={config.logo.height}
@@ -805,9 +805,6 @@ const handleSelectNetwork = (network: OfferNetwork) => {
                   className="h-12 w-auto object-contain sm:h-16"
                   unoptimized
                 />
-                <p className="text-sm opacity-90 sm:text-base">
-                  {config.description}
-                </p>
               </div>
             </button>
           ))}

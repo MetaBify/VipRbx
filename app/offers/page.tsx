@@ -109,7 +109,8 @@ const NETWORKS: Record<
       height: 70,
       alt: "AdBlueMedia logo",
     },
-    description: "Rotating CPI/CPE offers with geo targeting & 48h verification.",
+    description:
+      "Smart-rotated CPI/CPE wall that geo-targets traffic and unlocks within 10‑48h.",
     fetchUrl: "/api/offers/feed",
   },
   bitlabs: {
@@ -142,7 +143,8 @@ const NETWORKS: Record<
       height: 70,
       alt: "OGAds logo",
     },
-    description: "Direct CPI/CPA feed with device targeting and instant links.",
+    description:
+      "Direct CPI/CPA deeplinks with automatic device detection and fast tracking subs.",
     fetchUrl: "/api/offers/ogads",
   },
   taprain: {
@@ -158,7 +160,8 @@ const NETWORKS: Record<
       height: 70,
       alt: "TapRain logo",
     },
-    description: "TapRain incentive feed with lead callbacks.",
+    description:
+      "TapRain incentive feed for surveys + installs with instant callback credits.",
     fetchUrl: "/api/offers/taprain",
   },
   cpagrip: {
@@ -174,7 +177,8 @@ const NETWORKS: Record<
       height: 70,
       alt: "CPA Grip logo",
     },
-    description: "Direct CPA Grip JSON feed with mobile + desktop offers.",
+    description:
+      "CPA Grip JSON feed mixing email/ZIP + mobile offers for worldwide traffic.",
     fetchUrl: "/api/offers/cpagrip",
   },
 };

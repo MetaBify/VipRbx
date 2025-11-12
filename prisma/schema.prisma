@@ -33,7 +33,7 @@ model OfferLead {
   availableAt  DateTime
   awardedAt    DateTime?
   createdAt    DateTime    @default(now())
-  user         User        @relation(fields: [userId], references: [id])
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId       String
   raw          String?
 }
@@ -43,7 +43,7 @@ model ChatMessage {
   content   String
   level     Int
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
 }
 
@@ -62,7 +62,7 @@ model RainEvent {
 model RainClaim {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   rain      RainEvent @relation(fields: [rainId], references: [id])
   rainId    String

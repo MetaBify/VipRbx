@@ -1,0 +1,13 @@
+ALTER TABLE "OfferLead" DROP CONSTRAINT IF EXISTS "OfferLead_userId_fkey";
+ALTER TABLE "OfferLead"
+  ADD CONSTRAINT "OfferLead_userId_fkey"
+  FOREIGN KEY ("userId") REFERENCES "User"("id")
+  ON DELETE CASCADE
+  ON UPDATE CASCADE;
+
+ALTER TABLE "RainClaim" DROP CONSTRAINT IF EXISTS "RainClaim_userId_fkey";
+ALTER TABLE "RainClaim"
+  ADD CONSTRAINT "RainClaim_userId_fkey"
+  FOREIGN KEY ("userId") REFERENCES "User"("id")
+  ON DELETE CASCADE
+  ON UPDATE CASCADE;

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 const checkUrl = process.env.OFFER_CHECK_URL;
 const feedUserId = process.env.OFFER_FEED_USER_ID;
 const feedApiKey = process.env.OFFER_FEED_API_KEY;
-const CHECK_WINDOW_MS = 24 * 60 * 60 * 1000;
+const CHECK_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 function parseLeadsPayload(payload: unknown): any[] {
   if (Array.isArray(payload)) {
@@ -131,16 +131,16 @@ export async function POST(req: NextRequest) {
           const previousPoints = Number(placeholder.points);
           const pointsDiff = pointAmount - previousPoints;
 
-          await tx.offerLead.update({
-            where: { id: placeholder.id },
-            data: {
-              externalId,
-              points: pointAmount,
-              status: "PENDING",
-              availableAt,
-              raw: JSON.stringify(lead),
-            },
-          });
+        await tx.offerLead.update({
+          where: { id: placeholder.id },
+          data: {
+            externalId,
+            points: pointAmount,
+            status: "PENDING",
+            availableAt: new Date(),
+            raw: JSON.stringify(lead),
+          },
+        });
 
           if (pointsDiff !== 0) {
             pendingDelta += pointsDiff;
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
             offerId,
             points: pointAmount,
             status: "PENDING",
-            availableAt,
+            availableAt: new Date(),
             userId,
             raw: JSON.stringify(lead),
           },

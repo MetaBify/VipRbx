@@ -20,7 +20,8 @@ type OfferItem = {
   [key: string]: unknown;
 };
 
-const CHECK_WINDOW_MS = 24 * 60 * 60 * 1000;
+const CHECK_WINDOW_MS = 48 * 60 * 60 * 1000;
+const DISPLAY_CHECK_WINDOW_MS = 10 * 60 * 60 * 1000;
 
 function extractOfferPoints(offer: OfferItem): number {
   const candidates: number[] = [];
@@ -78,7 +79,6 @@ export default function VerifyPage() {
       }
     >
   >({});
-  const [now, setNow] = useState(Date.now());
   const syncLeadsRef =
     useRef<(showSpinner: boolean) => Promise<void>>(async () => {});
 
@@ -176,32 +176,20 @@ export default function VerifyPage() {
   }, [userId]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, []);
-
-  useEffect(() => {
     const timer = window.setInterval(() => {
       const current = Date.now();
       setOfferChecks((prev) => {
         let mutated = false;
         const next = { ...prev };
         Object.entries(prev).forEach(([offerId, state]) => {
-          if (
-            state.status === "checking" &&
-            state.source === "local" &&
-            state.endAt &&
-            state.endAt <= current
-          ) {
-            next[offerId] = { status: "failed", endAt: null, source: "local" };
+          if (state.endAt && state.endAt <= current) {
+            delete next[offerId];
             mutated = true;
           }
         });
         return mutated ? next : prev;
       });
-    }, 1000);
+    }, 60 * 1000);
 
     return () => window.clearInterval(timer);
   }, []);
@@ -227,7 +215,7 @@ export default function VerifyPage() {
         if (lead.status === "CHECKING") {
           next[lead.offerId] = {
             status: "checking",
-            endAt: new Date(lead.availableAt).getTime(),
+            endAt: Date.now() + DISPLAY_CHECK_WINDOW_MS,
             source: "server",
           };
           seen.add(lead.offerId);
@@ -269,7 +257,7 @@ export default function VerifyPage() {
         ...prev,
         [offerId]: {
           status: "checking",
-          endAt: Date.now() + CHECK_WINDOW_MS,
+          endAt: Date.now() + DISPLAY_CHECK_WINDOW_MS,
           source: "local",
         },
       }));
@@ -297,9 +285,7 @@ export default function VerifyPage() {
           ...prev,
           [offerId]: {
             status: "checking",
-            endAt: data.lead?.availableAt
-              ? new Date(data.lead.availableAt).getTime()
-              : Date.now() + CHECK_WINDOW_MS,
+            endAt: Date.now() + DISPLAY_CHECK_WINDOW_MS,
             source: "server",
           },
         }));
@@ -418,7 +404,7 @@ export default function VerifyPage() {
                 disabled={syncing}
                 className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-emerald-400"
               >
-                {syncing ? "Syncing..." : "Sync progress"}
+                {syncing ? "Refreshing..." : "Refresh"}
               </button>
               <Link
                 href="/withdraw"
@@ -458,8 +444,11 @@ export default function VerifyPage() {
               }
             : null;
           const offerState = serverState ?? offerChecks[ad.id];
-          const isChecking = offerState?.status === "checking";
-          const hasFailed = offerState?.status === "failed";
+          const isChecking =
+            offerState?.status === "checking" &&
+            (!offerState.endAt || offerState.endAt > Date.now());
+          const hasFailed =
+            !isChecking && offerState?.status === "failed";
           let buttonLabel = "Start offer";
           if (isChecking) {
             buttonLabel = "Checking…";

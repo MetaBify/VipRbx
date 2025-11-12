@@ -1,0 +1,89 @@
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { authCookieOptions, verifyToken } from "@/lib/auth";
+
+const defaultFeedUrl =
+  "https://www.cpagrip.com/common/offer_feed_json.php";
+const cpagripFeedUrl = process.env.CPAGRIP_FEED_URL ?? defaultFeedUrl;
+const cpagripUserId = process.env.CPAGRIP_USER_ID;
+const cpagripKey = process.env.CPAGRIP_PRIVATE_KEY;
+const cpagripDomain = process.env.CPAGRIP_TRACKING_DOMAIN;
+
+const buildFeedUrl = (
+  userId: string,
+  ip: string,
+  userAgent: string
+): URL => {
+  const url = new URL(cpagripFeedUrl);
+  url.searchParams.set("user_id", cpagripUserId as string);
+  url.searchParams.set("key", cpagripKey as string);
+  url.searchParams.set("tracking_id", userId);
+  url.searchParams.set("limit", "10");
+  if (cpagripDomain) {
+    url.searchParams.set("domain", cpagripDomain);
+  }
+  url.searchParams.set("showall", "1");
+  url.searchParams.set("showmobile", "true");
+  url.searchParams.set("ip", ip);
+  url.searchParams.set("ua", userAgent);
+  return url;
+};
+
+export async function GET(req: NextRequest) {
+  if (!cpagripUserId || !cpagripKey) {
+    return NextResponse.json(
+      { error: "CPA Grip feed not configured." },
+      { status: 500 }
+    );
+  }
+
+  const cookieStore = await cookies();
+  const token =
+    cookieStore.get(authCookieOptions.name)?.value ??
+    req.cookies.get(authCookieOptions.name)?.value;
+  const userId = verifyToken(token);
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const forwardedFor =
+    req.headers.get("x-forwarded-for") ??
+    req.headers.get("x-real-ip") ??
+    req.headers.get("cf-connecting-ip");
+  const forwardedIp = forwardedFor?.split(",")[0]?.trim();
+  const requestIp = (req as unknown as { ip?: string })?.ip;
+  const clientIp = forwardedIp ?? requestIp ?? "0.0.0.0";
+  const userAgent = req.headers.get("user-agent") ?? "Mozilla/5.0";
+
+  try {
+    const url = buildFeedUrl(userId, clientIp, userAgent);
+    const response = await fetch(url.toString(), {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      return NextResponse.json(
+        {
+          error: "Failed to fetch CPA Grip offers.",
+          details: text.slice(0, 500),
+        },
+        { status: 502 }
+      );
+    }
+
+    const payload = await response.json();
+    return NextResponse.json(payload);
+  } catch (error) {
+    console.error("CPA Grip feed error", error);
+    return NextResponse.json(
+      { error: "CPA Grip feed not reachable." },
+      { status: 502 }
+    );
+  }
+}
+

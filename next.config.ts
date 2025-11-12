@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
       "cdn.prod.website-files.com",
       "main-p.agmcdn.com",
       "taprain.com",
+      "www.cpagrip.com",
     ],
   },
   async rewrites() {

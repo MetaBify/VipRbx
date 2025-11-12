@@ -20,7 +20,7 @@ type OfferItem = {
   [key: string]: unknown;
 };
 
-type OfferNetwork = "adblue" | "bitlabs" | "ogads" | "taprain";
+type OfferNetwork = "adblue" | "bitlabs" | "ogads" | "taprain" | "cpagrip";
 
 type BitLabsOffer = {
   id: number | string;
@@ -69,6 +69,16 @@ type TapRainOffer = {
   conversion?: string;
   payout?: string | number;
   url?: string;
+};
+
+type CPAGripOffer = {
+  offerid: number | string;
+  title?: string;
+  description?: string;
+  offerlink?: string;
+  payout?: string | number;
+  offerphoto?: string;
+  accepted_countries?: string;
 };
 
 const NETWORKS: Record<
@@ -150,6 +160,22 @@ const NETWORKS: Record<
     },
     description: "TapRain incentive feed with lead callbacks.",
     fetchUrl: "/api/offers/taprain",
+  },
+  cpagrip: {
+    label: "CPA Grip",
+    badge: "BOOST",
+    boost: "+50%",
+    badgeColor: "bg-sky-500",
+    boostColor: "bg-purple-500",
+    gradient: "from-slate-900 to-sky-900",
+    logo: {
+      src: "https://www.cpagrip.com/admin/images/cpagrip_logo_medium.png",
+      width: 260,
+      height: 70,
+      alt: "CPA Grip logo",
+    },
+    description: "Direct CPA Grip JSON feed with mobile + desktop offers.",
+    fetchUrl: "/api/offers/cpagrip",
   },
 };
 
@@ -281,6 +307,26 @@ const mapTapRainOffer = (offer: TapRainOffer): OfferItem => {
   };
 };
 
+const mapCPAGripOffer = (offer: CPAGripOffer): OfferItem => {
+  const fallbackId = `cpagrip-${Math.random().toString(36).slice(2, 10)}`;
+  const payout =
+    parseNumber(offer.payout ?? 0) ?? 0;
+
+  return {
+    id: String(offer.offerid ?? fallbackId),
+    name: offer.title ?? `CPA Grip offer ${offer.offerid ?? ""}`,
+    conversion:
+      offer.description ??
+      (offer.accepted_countries
+        ? `Countries: ${offer.accepted_countries}`
+        : "Complete the requirements."),
+    payout,
+    network_icon:
+      offer.offerphoto ?? NETWORKS.cpagrip.logo.src,
+    url: offer.offerlink ?? "#",
+  };
+};
+
 export default function VerifyPage() {
   const { user, setUser, loading: userLoading, needsAuth, refresh } =
     useUserSummary();
@@ -289,8 +335,9 @@ export default function VerifyPage() {
   >({
     adblue: [],
     bitlabs: [],
-  ogads: [],
-  taprain: [],
+    ogads: [],
+    taprain: [],
+    cpagrip: [],
   });
   const [bitLabsProgress, setBitLabsProgress] = useState<
     BitLabsStartedOffer[]
@@ -341,6 +388,10 @@ export default function VerifyPage() {
           ? data
           : data?.offers ?? [];
         list = rawOffers.map(mapTapRainOffer);
+        setBitLabsProgress([]);
+      } else if (network === "cpagrip") {
+        const rawOffers: CPAGripOffer[] = data?.offers ?? [];
+        list = rawOffers.map(mapCPAGripOffer);
         setBitLabsProgress([]);
       }
       setNetworkOffers((prev) => ({
@@ -415,6 +466,7 @@ export default function VerifyPage() {
         bitlabs: [],
         ogads: [],
         taprain: [],
+        cpagrip: [],
       });
       setBitLabsProgress([]);
       setDisplayCount(0);

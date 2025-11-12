@@ -20,7 +20,7 @@ type OfferItem = {
   [key: string]: unknown;
 };
 
-type OfferNetwork = "adblue" | "bitlabs" | "ogads";
+type OfferNetwork = "adblue" | "bitlabs" | "ogads" | "taprain";
 
 type BitLabsOffer = {
   id: number | string;
@@ -61,6 +61,14 @@ type OgAdsOffer = {
   country?: string;
   device?: string;
   link?: string;
+};
+
+type TapRainOffer = {
+  id: string | number;
+  anchor?: string;
+  conversion?: string;
+  payout?: string | number;
+  url?: string;
 };
 
 const NETWORKS: Record<
@@ -126,6 +134,22 @@ const NETWORKS: Record<
     },
     description: "Direct CPI/CPA feed with device targeting and instant links.",
     fetchUrl: "/api/offers/ogads",
+  },
+  taprain: {
+    label: "TapRain",
+    badge: "NEW",
+    boost: "+60%",
+    badgeColor: "bg-orange-400 text-slate-900",
+    boostColor: "bg-indigo-500",
+    gradient: "from-indigo-900 to-orange-900",
+    logo: {
+      src: "https://taprain.com/placeholder-logo.png",
+      width: 260,
+      height: 70,
+      alt: "TapRain logo",
+    },
+    description: "TapRain incentive feed with lead callbacks.",
+    fetchUrl: "/api/offers/taprain",
   },
 };
 
@@ -242,6 +266,21 @@ const mapOgAdsOffer = (offer: OgAdsOffer): OfferItem => {
   };
 };
 
+const mapTapRainOffer = (offer: TapRainOffer): OfferItem => {
+  const fallbackId = `taprain-${Math.random().toString(36).slice(2, 10)}`;
+  const payout =
+    parseNumber(offer.payout ?? 0) ?? 0;
+
+  return {
+    id: String(offer.id ?? fallbackId),
+    name: offer.anchor ?? `TapRain offer ${offer.id ?? ""}`,
+    conversion: offer.conversion ?? "Complete the listed requirements.",
+    payout,
+    network_icon: NETWORKS.taprain.logo.src,
+    url: offer.url ?? "#",
+  };
+};
+
 export default function VerifyPage() {
   const { user, setUser, loading: userLoading, needsAuth, refresh } =
     useUserSummary();
@@ -250,7 +289,8 @@ export default function VerifyPage() {
   >({
     adblue: [],
     bitlabs: [],
-    ogads: [],
+  ogads: [],
+  taprain: [],
   });
   const [bitLabsProgress, setBitLabsProgress] = useState<
     BitLabsStartedOffer[]
@@ -295,6 +335,12 @@ export default function VerifyPage() {
       } else if (network === "ogads") {
         const rawOffers: OgAdsOffer[] = data?.offers ?? [];
         list = rawOffers.map(mapOgAdsOffer);
+        setBitLabsProgress([]);
+      } else if (network === "taprain") {
+        const rawOffers: TapRainOffer[] = Array.isArray(data)
+          ? data
+          : data?.offers ?? [];
+        list = rawOffers.map(mapTapRainOffer);
         setBitLabsProgress([]);
       }
       setNetworkOffers((prev) => ({
@@ -368,6 +414,7 @@ export default function VerifyPage() {
         adblue: [],
         bitlabs: [],
         ogads: [],
+        taprain: [],
       });
       setBitLabsProgress([]);
       setDisplayCount(0);

@@ -23,6 +23,7 @@ const nextConfig: NextConfig = {
       "adbluemedia.com",
       "cdn.prod.website-files.com",
       "main-p.agmcdn.com",
+      "taprain.com",
     ],
   },
   async rewrites() {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { authCookieOptions, verifyToken } from "@/lib/auth";
 
-const defaultOgAdsUrl = "https://redirectapps.online/api/v2";
+const defaultOgAdsUrl = "https://applocked.org/api/v2";
 const ogAdsUrl = process.env.OGADS_API_URL ?? defaultOgAdsUrl;
 const ogAdsApiKey = process.env.OGADS_API_KEY;
 const ogAdsCtype = process.env.OGADS_CTYPE;
@@ -50,18 +50,13 @@ export async function GET(req: NextRequest) {
   }
 
   const forwardedFor =
-    req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip");
+    req.headers.get("x-forwarded-for") ??
+    req.headers.get("x-real-ip") ??
+    req.headers.get("cf-connecting-ip");
   const forwardedIp = forwardedFor?.split(",")[0]?.trim();
   const requestIp = (req as unknown as { ip?: string })?.ip;
-  const clientIp = forwardedIp ?? requestIp ?? null;
-  const userAgent = req.headers.get("user-agent");
-
-  if (!clientIp || !userAgent) {
-    return NextResponse.json(
-      { error: "Client IP and user agent required for OGAds feed." },
-      { status: 400 }
-    );
-  }
+  const clientIp = forwardedIp ?? requestIp ?? "0.0.0.0";
+  const userAgent = req.headers.get("user-agent") ?? "Mozilla/5.0";
 
   const url = buildRequestUrl(req, userId, clientIp, userAgent);
 

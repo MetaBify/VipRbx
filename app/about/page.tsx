@@ -3,6 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 
+const SUPPORT_EMAIL = "lvg3ns@gmail.com";
+
 const faqs = [
   {
     question: "How do levels work?",
@@ -40,7 +42,15 @@ export default function AboutPage() {
         </h1>
         <p className="mt-2 text-sm sm:text-base md:text-lg text-gray-700">
           Everything you need to know about offers, levels, and withdrawals in
-          one place.
+          one place. VipRbx is a new project, so report any bugs or payout
+          issues to{" "}
+          <a
+            href={`mailto:${SUPPORT_EMAIL}`}
+            className="font-semibold underline"
+          >
+            {SUPPORT_EMAIL}
+          </a>{" "}
+          while we keep shipping updates.
         </p>
       </div>
 
@@ -62,7 +72,8 @@ export default function AboutPage() {
               Complete offers, sync your progress, and watch your balance grow.
               Pending points auto-unlock once providers confirm them. Withdraw
               whenever you hit the requirement—requests deduct points instantly
-              to prevent double spends, and our team fulfills them right after.
+              to prevent double spends, and our team sends the Robux code (or
+              PayPal) manually within 1-3 days to the contact details you supply.
             </p>
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
               <p className="text-xs uppercase tracking-[0.35em] text-emerald-500">
@@ -140,6 +151,28 @@ export default function AboutPage() {
               </Link>
             </div>
           </div>
+
+          <div className="flex items-center justify-center gap-2">
+            <Image
+              width={200}
+              height={200}
+              className="w-16 h-16 object-contain"
+              alt="TikTok Logo"
+              src="https://toppng.com/uploads/preview/tiktok-logo-png-file-11661637626x4q1wsgcsy.png"
+              unoptimized
+            />
+            <div className="flex flex-col">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold">
+                TikTok:
+              </h2>
+              <Link
+                href="https://www.tiktok.com/@viprbxofficial"
+                className="text-lg sm:text-xl md:text-2xl transition-colors"
+              >
+                @viprbxofficial
+              </Link>
+            </div>
+          </div>
         </div>
 
         <div className="group hover:shadow-2xl hover:scale-105 transition-transform duration-300 ease-in-out">
@@ -155,6 +188,15 @@ export default function AboutPage() {
           className="text-xs uppercase tracking-[0.35em] text-emerald-500 transition hover:text-emerald-600 sm:text-sm"
         >
           robux giveaways · roblox reward codes · instant robux redemption
+        </Link>
+      </div>
+
+      <div className="mt-6 flex justify-center">
+        <Link
+          href="/privacy"
+          className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-[0.65rem] uppercase tracking-[0.35em] text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+        >
+          privacy policy
         </Link>
       </div>
     </div>

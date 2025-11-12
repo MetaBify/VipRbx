@@ -52,7 +52,8 @@ export async function GET(req: NextRequest) {
   const forwardedFor =
     req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip");
   const forwardedIp = forwardedFor?.split(",")[0]?.trim();
-  const clientIp = forwardedIp ?? req.ip ?? null;
+  const requestIp = (req as unknown as { ip?: string })?.ip;
+  const clientIp = forwardedIp ?? requestIp ?? null;
   const userAgent = req.headers.get("user-agent");
 
   if (!clientIp || !userAgent) {

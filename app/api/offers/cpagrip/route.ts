@@ -12,7 +12,8 @@ const cpagripDomain = process.env.CPAGRIP_TRACKING_DOMAIN;
 const buildFeedUrl = (
   userId: string,
   ip: string,
-  userAgent: string
+  userAgent: string,
+  country?: string | null
 ): URL => {
   const url = new URL(cpagripFeedUrl);
   url.searchParams.set("user_id", cpagripUserId as string);
@@ -22,8 +23,9 @@ const buildFeedUrl = (
   if (cpagripDomain) {
     url.searchParams.set("domain", cpagripDomain);
   }
-  url.searchParams.set("showall", "1");
-  url.searchParams.set("showmobile", "true");
+  if (country) {
+    url.searchParams.set("country", country);
+  }
   url.searchParams.set("ip", ip);
   url.searchParams.set("ua", userAgent);
   return url;
@@ -55,9 +57,13 @@ export async function GET(req: NextRequest) {
   const requestIp = (req as unknown as { ip?: string })?.ip;
   const clientIp = forwardedIp ?? requestIp ?? "0.0.0.0";
   const userAgent = req.headers.get("user-agent") ?? "Mozilla/5.0";
+  const countryHeader =
+    req.headers.get("x-vercel-ip-country") ??
+    (req as unknown as { geo?: { country?: string } })?.geo?.country ??
+    null;
 
   try {
-    const url = buildFeedUrl(userId, clientIp, userAgent);
+    const url = buildFeedUrl(userId, clientIp, userAgent, countryHeader);
     const response = await fetch(url.toString(), {
       cache: "no-store",
       headers: {

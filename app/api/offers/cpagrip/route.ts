@@ -65,8 +65,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    const text = await response.text();
+
     if (!response.ok) {
-      const text = await response.text();
       return NextResponse.json(
         {
           error: "Failed to fetch CPA Grip offers.",
@@ -76,8 +77,18 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const payload = await response.json();
-    return NextResponse.json(payload);
+    try {
+      const payload = JSON.parse(text);
+      return NextResponse.json(payload);
+    } catch {
+      return NextResponse.json(
+        {
+          error: "CPA Grip feed returned invalid JSON.",
+          details: text.slice(0, 500),
+        },
+        { status: 502 }
+      );
+    }
   } catch (error) {
     console.error("CPA Grip feed error", error);
     return NextResponse.json(
@@ -86,4 +97,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-

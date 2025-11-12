@@ -37,7 +37,7 @@ export default async function Home() {
         <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 text-white shadow-xl">
           <h2 className="text-2xl font-semibold">Why viprbx?</h2>
           <ul className="mt-6 space-y-4 text-sm text-white/80">
-            <li>&bull; Real-time point tracking with a claim center and withdrawal flow.</li>
+            <li>&bull; Realtime point tracking with a claim center and withdrawal flow.</li>
             <li>&bull; Points from offer providers convert to about 8 Robux each when redeemed.</li>
             <li>&bull; No fake username prompt. just register, sync offers, and redeem when you&apos;re ready.</li>
           </ul>

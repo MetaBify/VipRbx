@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
       "i.gyazo.com",
       "static.wikia.nocookie.net",
       "icons.veryicon.com",
+      "members.ogads.com",
+      "media.go2speed.org",
+      "adbluemedia.com",
+      "cdn.prod.website-files.com",
+      "main-p.agmcdn.com",
     ],
   },
   async rewrites() {

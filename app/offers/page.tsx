@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Loading from "../components/Loader";
@@ -18,6 +18,115 @@ type OfferItem = {
   network_icon: string;
   url: string;
   [key: string]: unknown;
+};
+
+type OfferNetwork = "adblue" | "bitlabs" | "ogads";
+
+type BitLabsOffer = {
+  id: number | string;
+  anchor?: string;
+  click_url?: string;
+  icon_url?: string;
+  confirmation_time?: string;
+  description?: string;
+  total_points?: string | number;
+  payout?: string | number;
+  epc?: string | number;
+  events?: Array<{
+    name?: string;
+    payout?: string | number;
+    points?: string | number;
+    payable?: boolean;
+  }>;
+  is_sticky?: boolean;
+};
+
+type BitLabsStartedOffer = {
+  anchor?: string;
+  description?: string;
+  latest_date?: string;
+  completed_events?: number;
+  events?: Array<{ name?: string; status?: string }>;
+};
+
+type OgAdsOffer = {
+  offerid: number | string;
+  name?: string;
+  name_short?: string;
+  description?: string;
+  adcopy?: string;
+  picture?: string;
+  payout?: string | number;
+  epc?: string | number;
+  country?: string;
+  device?: string;
+  link?: string;
+};
+
+const NETWORKS: Record<
+  OfferNetwork,
+  {
+    label: string;
+    badge: string;
+    boost: string;
+    badgeColor: string;
+    boostColor: string;
+    gradient: string;
+    logo: { src: string; width: number; height: number; alt: string };
+    description: string;
+    fetchUrl: string;
+    enabled?: boolean;
+  }
+> = {
+  adblue: {
+    label: "AdBlueMedia",
+    badge: "HOT",
+    boost: "+40%",
+    badgeColor: "bg-emerald-500",
+    boostColor: "bg-emerald-400",
+    gradient: "from-slate-800 to-slate-900",
+    logo: {
+      src: "https://adbluemedia.com/logo-488x74.png",
+      width: 300,
+      height: 70,
+      alt: "AdBlueMedia logo",
+    },
+    description: "Rotating CPI/CPE offers with geo targeting & 48h verification.",
+    fetchUrl: "/api/offers/feed",
+  },
+  bitlabs: {
+    label: "BitLabs",
+    badge: "BEST",
+    boost: "+75%",
+    badgeColor: "bg-yellow-400 text-slate-900",
+    boostColor: "bg-emerald-500",
+    gradient: "from-sky-500 to-blue-500",
+    logo: {
+      src: "https://cdn.prod.website-files.com/603902f0b6e52132b1b427ed/626bd942d8b5e7ab3013fa8d_adjust_bitlabs.png",
+      width: 320,
+      height: 90,
+      alt: "BitLabs logo",
+    },
+    description: "High paying goal-based offers plus in-progress tracking.",
+    fetchUrl: "/api/offers/bitlabs",
+    enabled: false,
+  },
+  ogads: {
+    label: "OGAds",
+    badge: "NEW",
+    boost: "+35%",
+    badgeColor: "bg-purple-500",
+    boostColor: "bg-teal-400",
+    gradient: "from-slate-900 to-purple-900",
+    logo: {
+      src: "https://members.ogads.com/build/assets/og-ads-logo-dark-CqvYjLFB.svg",
+      width: 260,
+      height: 70,
+      alt: "OGAds logo",
+    },
+    description: "Direct CPI/CPA feed with device targeting and instant links.",
+    fetchUrl: "/api/offers/ogads",
+  },
 };
 
 const CHECK_WINDOW_MS = 48 * 60 * 60 * 1000;
@@ -61,10 +170,92 @@ function extractOfferPoints(offer: OfferItem): number {
   return 0;
 }
 
+const parseNumber = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const normalized = value.replace(",", ".");
+    const parsed = Number(normalized);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return null;
+};
+
+const mapBitLabsOffer = (offer: BitLabsOffer): OfferItem => {
+  const eventWithPayout =
+    offer.events?.find((event) => parseNumber(event.payout) && event.payable) ??
+    offer.events?.find((event) => parseNumber(event.payout)) ??
+    offer.events?.[0];
+
+  const totalPoints = parseNumber(offer.total_points);
+  const payout =
+    parseNumber(eventWithPayout?.payout) ??
+    parseNumber(offer.payout) ??
+    parseNumber(offer.epc) ??
+    (totalPoints ? totalPoints / 100 : null) ??
+    0;
+
+  const fallbackId = `bitlabs-${Math.random().toString(36).slice(2, 10)}`;
+
+  return {
+    id: String(offer.id ?? fallbackId),
+    name: offer.anchor ?? `BitLabs offer ${offer.id ?? ""}`,
+    conversion:
+      offer.confirmation_time ??
+      eventWithPayout?.name ??
+      offer.description ??
+      "",
+    payout: payout ?? undefined,
+    network_icon: offer.icon_url ?? NETWORKS.bitlabs.logo.src,
+    url: offer.click_url ?? "#",
+    sticky: Boolean(offer.is_sticky),
+    meta: {
+      events: offer.events ?? [],
+    },
+  };
+};
+
+const mapOgAdsOffer = (offer: OgAdsOffer): OfferItem => {
+  const fallbackId = `ogads-${Math.random().toString(36).slice(2, 10)}`;
+  const payout =
+    parseNumber(offer.payout) ??
+    parseNumber(offer.epc) ??
+    undefined;
+
+  return {
+    id: String(offer.offerid ?? fallbackId),
+    name: offer.name ?? offer.name_short ?? `OGAds offer ${offer.offerid ?? ""}`,
+    conversion:
+      offer.adcopy ??
+      offer.description ??
+      [offer.device, offer.country].filter(Boolean).join(" • "),
+    payout: payout,
+    network_icon: offer.picture ?? NETWORKS.ogads.logo.src,
+    url: offer.link ?? "#",
+    meta: {
+      country: offer.country,
+      device: offer.device,
+    },
+  };
+};
+
 export default function VerifyPage() {
   const { user, setUser, loading: userLoading, needsAuth, refresh } =
     useUserSummary();
-  const [offers, setOffers] = useState<OfferItem[]>([]);
+  const [networkOffers, setNetworkOffers] = useState<
+    Record<OfferNetwork, OfferItem[]>
+  >({
+    adblue: [],
+    bitlabs: [],
+    ogads: [],
+  });
+  const [bitLabsProgress, setBitLabsProgress] = useState<
+    BitLabsStartedOffer[]
+  >([]);
+  const [activeNetwork, setActiveNetwork] = useState<OfferNetwork | null>(null);
   const [displayCount, setDisplayCount] = useState(8);
   const [loadingOffers, setLoadingOffers] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -82,22 +273,40 @@ export default function VerifyPage() {
   const syncLeadsRef =
     useRef<(showSpinner: boolean) => Promise<void>>(async () => {});
 
-  const fetchOffers = useCallback(async () => {
+  const fetchOffers = useCallback(async (network: OfferNetwork) => {
     setLoadingOffers(true);
     setError(null);
     try {
-      const response = await fetch("/api/offers/feed", { cache: "no-store" });
+      const response = await fetch(NETWORKS[network].fetchUrl, {
+        cache: "no-store",
+      });
       if (!response.ok) {
-        setError("Unable to load offers right now.");
-        return;
+        throw new Error("Unable to load offers right now.");
       }
       const data = await response.json();
-      const list = Array.isArray(data) ? data.slice(0, 10) : [];
-      setOffers(list);
-      setDisplayCount(Math.min(8, list.length));
+      let list: OfferItem[] = [];
+      if (network === "adblue") {
+        list = Array.isArray(data) ? data.slice(0, 20) : [];
+        setBitLabsProgress([]);
+      } else if (network === "bitlabs") {
+        const rawOffers: BitLabsOffer[] = data?.data?.offers ?? [];
+        list = rawOffers.map(mapBitLabsOffer);
+        setBitLabsProgress(data?.data?.started_offers ?? []);
+      } else if (network === "ogads") {
+        const rawOffers: OgAdsOffer[] = data?.offers ?? [];
+        list = rawOffers.map(mapOgAdsOffer);
+        setBitLabsProgress([]);
+      }
+      setNetworkOffers((prev) => ({
+        ...prev,
+        [network]: list,
+      }));
+      setDisplayCount(Math.min(8, list.length || 8));
     } catch (err) {
       console.error(err);
-      setError("Unable to load offers right now.");
+      setError(
+        err instanceof Error ? err.message : "Unable to load offers right now."
+      );
     } finally {
       setLoadingOffers(false);
     }
@@ -147,16 +356,41 @@ export default function VerifyPage() {
   );
 
   const userId = user?.id ?? null;
+  const activeOffers = useMemo(
+    () => (activeNetwork ? networkOffers[activeNetwork] ?? [] : []),
+    [activeNetwork, networkOffers]
+  );
 
   useEffect(() => {
     if (!userId) {
-      setOffers([]);
+      setActiveNetwork(null);
+      setNetworkOffers({
+        adblue: [],
+        bitlabs: [],
+        ogads: [],
+      });
+      setBitLabsProgress([]);
       setDisplayCount(0);
       return;
     }
 
-    fetchOffers();
-  }, [userId, fetchOffers]);
+    if (activeNetwork && NETWORKS[activeNetwork]?.enabled === false) {
+      setActiveNetwork(null);
+    }
+  }, [userId, activeNetwork]);
+
+  useEffect(() => {
+    if (!userId || !activeNetwork) {
+      return;
+    }
+
+    if (networkOffers[activeNetwork].length) {
+      setDisplayCount(Math.min(8, networkOffers[activeNetwork].length));
+      return;
+    }
+
+    fetchOffers(activeNetwork);
+  }, [activeNetwork, userId, networkOffers, fetchOffers]);
 
   useEffect(() => {
     syncLeadsRef.current = syncLeads;
@@ -332,11 +566,31 @@ export default function VerifyPage() {
   );
 
   const handleLoadMore = () => {
-    setDisplayCount((prev) => Math.min(prev + 4, offers.length));
+    setDisplayCount((prev) => Math.min(prev + 4, activeOffers.length));
   };
 
   const handleShowLess = () => {
-    setDisplayCount(Math.min(8, offers.length));
+    setDisplayCount(Math.min(8, activeOffers.length));
+  };
+
+const handleSelectNetwork = (network: OfferNetwork) => {
+    if (NETWORKS[network]?.enabled === false) {
+      return;
+    }
+    setError(null);
+    setActiveNetwork(network);
+  };
+
+  const handleBackToNetworks = () => {
+    setActiveNetwork(null);
+    setDisplayCount(8);
+    setError(null);
+  };
+
+  const handleReloadNetwork = () => {
+    if (activeNetwork) {
+      fetchOffers(activeNetwork);
+    }
   };
 
   if (!userLoading && needsAuth) {
@@ -389,7 +643,7 @@ export default function VerifyPage() {
                 <span className="font-semibold text-emerald-600">
                   {user.balance.toFixed(2)} pts
                 </span>{" "}
-                · Pending:{" "}
+                | Pending:{" "}
                 <span className="font-semibold text-amber-600">
                   {user.pending.toFixed(2)} pts
                 </span>
@@ -418,16 +672,114 @@ export default function VerifyPage() {
         </section>
       )}
 
-      {loadingOffers && <Loading verify={true} />}
-
-      {error && (
-        <div className="w-full max-w-6xl rounded-2xl bg-rose-100 px-4 py-3 text-sm text-rose-700 shadow">
-          {error}
-        </div>
+      {!activeNetwork && (
+        <section className="grid w-full max-w-6xl grid-cols-1 gap-4 md:grid-cols-2">
+          {(Object.entries(NETWORKS) as Array<
+            [OfferNetwork, (typeof NETWORKS)[OfferNetwork]]
+          >)
+            .filter(([, config]) => config.enabled !== false)
+            .map(([networkId, config]) => (
+            <button
+              type="button"
+              key={networkId}
+              onClick={() => handleSelectNetwork(networkId)}
+              className={`rounded-3xl bg-gradient-to-r ${config.gradient} p-5 text-left text-white shadow-lg transition hover:scale-[1.01] focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60`}
+            >
+              <div className="flex items-center justify-between text-[0.65rem] font-semibold uppercase tracking-[0.25em] sm:text-xs">
+                <span className={`rounded-full px-3 py-1 ${config.badgeColor}`}>
+                  {config.badge}
+                </span>
+                <span className={`rounded-full px-3 py-1 ${config.boostColor}`}>
+                  {config.boost}
+                </span>
+              </div>
+              <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+                <Image
+                  width={config.logo.width}
+                  height={config.logo.height}
+                  src={config.logo.src}
+                  alt={config.logo.alt}
+                  className="h-12 w-auto object-contain sm:h-16"
+                  unoptimized
+                />
+                <p className="text-sm opacity-90 sm:text-base">
+                  {config.description}
+                </p>
+              </div>
+            </button>
+          ))}
+        </section>
       )}
 
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full max-w-6xl">
-        {offers.slice(0, displayCount).map((ad) => {
+      {activeNetwork && (
+        <>
+          <div className="flex w-full max-w-6xl flex-col gap-4 rounded-3xl bg-slate-900 p-5 text-white shadow-lg md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-amber-300">
+                {NETWORKS[activeNetwork].label}
+              </p>
+              <h3 className="text-2xl font-semibold">
+                Curated {NETWORKS[activeNetwork].label} offers
+              </h3>
+              <p className="text-sm text-slate-200">
+                {NETWORKS[activeNetwork].description}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleBackToNetworks}
+                className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"
+              >
+                Back to offer hubs
+              </button>
+              <button
+                type="button"
+                onClick={handleReloadNetwork}
+                className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+              >
+                Reload {NETWORKS[activeNetwork].label}
+              </button>
+            </div>
+          </div>
+
+          {activeNetwork === "bitlabs" && bitLabsProgress.length > 0 && (
+            <div className="w-full max-w-6xl rounded-3xl border border-slate-200 bg-white/90 p-5 shadow">
+              <p className="text-sm font-semibold text-slate-900">
+                In-progress BitLabs goals
+              </p>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                {bitLabsProgress.slice(0, 4).map((progress, index) => (
+                  <div
+                    key={`${progress.anchor ?? progress.latest_date ?? index}`}
+                    className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+                  >
+                    <p className="text-base font-semibold text-slate-900">
+                      {progress.anchor ?? "Active goal"}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      {progress.description ??
+                        "Finish the remaining steps to unlock rewards."}
+                    </p>
+                    <p className="mt-3 text-xs font-semibold text-emerald-600">
+                      {progress.completed_events ?? 0} events completed
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {loadingOffers && <Loading verify={true} />}
+
+          {error && (
+            <div className="w-full max-w-6xl rounded-2xl bg-rose-100 px-4 py-3 text-sm text-rose-700 shadow">
+              {error}
+            </div>
+          )}
+
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full max-w-6xl">
+            {activeOffers.slice(0, displayCount).map((ad) => {
           const estimatedPoints = extractOfferPoints(ad);
           const serverLead = user?.leads?.find(
             (lead) =>
@@ -451,7 +803,7 @@ export default function VerifyPage() {
             !isChecking && offerState?.status === "failed";
           let buttonLabel = "Start offer";
           if (isChecking) {
-            buttonLabel = "Checking…";
+            buttonLabel = "Checking...";
           }
 
           const buttonClasses = isChecking
@@ -503,26 +855,30 @@ export default function VerifyPage() {
             </div>
           );
         })}
-      </div>
+          </div>
 
-      <div className="mt-8 flex gap-4">
-        {displayCount < offers.length && (
-          <button
-            className="rounded-md border-2 border-black bg-cyan-400 px-4 py-2 font-semibold text-black transition-colors hover:bg-cyan-500"
-            onClick={handleLoadMore}
-          >
-            More offers
-          </button>
-        )}
-        {displayCount > 8 && (
-          <button
-            className="rounded-md border-2 border-black bg-cyan-400 px-4 py-2 font-semibold text-black transition-colors hover:bg-cyan-500"
-            onClick={handleShowLess}
-          >
-            Less offers
-          </button>
-        )}
-      </div>
+          {activeOffers.length > 0 && (
+            <div className="mt-8 flex gap-4">
+              {displayCount < activeOffers.length && (
+                <button
+                  className="rounded-md border-2 border-black bg-cyan-400 px-4 py-2 font-semibold text-black transition-colors hover:bg-cyan-500"
+                  onClick={handleLoadMore}
+                >
+                  More offers
+                </button>
+              )}
+              {displayCount > 8 && (
+                <button
+                  className="rounded-md border-2 border-black bg-cyan-400 px-4 py-2 font-semibold text-black transition-colors hover:bg-cyan-500"
+                  onClick={handleShowLess}
+                >
+                  Less offers
+                </button>
+              )}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

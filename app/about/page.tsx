@@ -158,7 +158,7 @@ export default function AboutPage() {
               height={200}
               className="w-16 h-16 object-contain"
               alt="TikTok Logo"
-              src="https://www.logo.wine/a/logo/TikTok/TikTok-Icon-Full-Logo.wine.svg"
+              src="https://img.freepik.com/premium-vector/social-media-icon-illustration-tiktok-tiktok-icon-vector-illustration_561158-2136.jpg?w=740"
               unoptimized
             />
             <div className="flex flex-col">
@@ -170,6 +170,28 @@ export default function AboutPage() {
                 className="text-lg sm:text-xl md:text-2xl transition-colors"
               >
                 @viprbxofficial
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-2">
+            <Image
+              width={200}
+              height={200}
+              className="w-16 h-16 object-contain"
+              alt="Instagram Logo"
+              src="https://img.freepik.com/premium-psd/instagram-logo_971166-164438.jpg?w=740"
+              unoptimized
+            />
+            <div className="flex flex-col">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold">
+                Instagram:
+              </h2>
+              <Link
+                href="https://www.instagram.com/bertusontop/reels"
+                className="text-lg sm:text-xl md:text-2xl transition-colors"
+              >
+                @bertusontop
               </Link>
             </div>
           </div>

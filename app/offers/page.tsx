@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Loading from "../components/Loader";
-import { useUserSummary } from "@/lib/useUserSummary";
+import { useUserSummary, UserSummary } from "@/lib/useUserSummary";
 
 type OfferItem = {
   id: string;
@@ -20,7 +20,13 @@ type OfferItem = {
   [key: string]: unknown;
 };
 
-type OfferNetwork = "adblue" | "bitlabs" | "ogads" | "taprain" | "cpagrip";
+type OfferNetwork =
+  | "adblue"
+  | "bitlabs"
+  | "ogads"
+  | "taprain"
+  | "cpagrip"
+  | "socials";
 
 type BitLabsOffer = {
   id: number | string;
@@ -81,6 +87,13 @@ type CPAGripOffer = {
   accepted_countries?: string;
 };
 
+type UpdateUserFn = (
+  updater:
+    | UserSummary
+    | null
+    | ((prev: UserSummary | null) => UserSummary | null)
+) => void;
+
 const NETWORKS: Record<
   OfferNetwork,
   {
@@ -133,7 +146,7 @@ const NETWORKS: Record<
   ogads: {
     label: "OGAds",
     badge: "NEW",
-    boost: "+35%",
+    boost: "+30%",
     badgeColor: "bg-purple-500",
     boostColor: "bg-teal-400",
     gradient: "from-slate-900 to-purple-900",
@@ -150,7 +163,7 @@ const NETWORKS: Record<
   taprain: {
     label: "TapRain",
     badge: "NEW",
-    boost: "+60%",
+    boost: "+10%",
     badgeColor: "bg-orange-400 text-slate-900",
     boostColor: "bg-indigo-500",
     gradient: "from-indigo-900 to-orange-900",
@@ -167,7 +180,7 @@ const NETWORKS: Record<
   cpagrip: {
     label: "CPA Grip",
     badge: "BOOST",
-    boost: "+50%",
+    boost: "+20%",
     badgeColor: "bg-sky-500",
     boostColor: "bg-purple-500",
     gradient: "from-slate-900 to-sky-900",
@@ -180,6 +193,22 @@ const NETWORKS: Record<
     description:
       "CPA Grip JSON feed mixing email/ZIP + mobile offers for worldwide traffic.",
     fetchUrl: "/api/offers/cpagrip",
+  },
+  socials: {
+    label: "Social Bonus",
+    badge: "BONUS",
+    boost: "+1pt",
+    badgeColor: "bg-pink-500",
+    boostColor: "bg-indigo-500",
+    gradient: "from-slate-900 to-pink-900",
+    logo: {
+      src: "https://img.freepik.com/premium-vector/social-media-icon-illustration_561158-1477.jpg?w=740",
+      width: 240,
+      height: 80,
+      alt: "Social bundle",
+    },
+    description: "Follow our socials and wait 60s to claim 1 bonus point.",
+    fetchUrl: "",
   },
 };
 
@@ -342,6 +371,7 @@ export default function VerifyPage() {
     ogads: [],
     taprain: [],
     cpagrip: [],
+    socials: [],
   });
   const [bitLabsProgress, setBitLabsProgress] = useState<
     BitLabsStartedOffer[]
@@ -365,6 +395,10 @@ export default function VerifyPage() {
     useRef<(showSpinner: boolean) => Promise<void>>(async () => {});
 
   const fetchOffers = useCallback(async (network: OfferNetwork) => {
+    if (network === "socials") {
+      setLoadingOffers(false);
+      return;
+    }
     setLoadingOffers(true);
     setError(null);
     try {
@@ -471,6 +505,7 @@ export default function VerifyPage() {
         ogads: [],
         taprain: [],
         cpagrip: [],
+        socials: [],
       });
       setBitLabsProgress([]);
       setDisplayCount(0);
@@ -484,6 +519,12 @@ export default function VerifyPage() {
 
   useEffect(() => {
     if (!userId || !activeNetwork) {
+      return;
+    }
+
+    if (activeNetwork === "socials") {
+      setLoadingOffers(false);
+      setDisplayCount(0);
       return;
     }
 
@@ -811,7 +852,15 @@ const handleSelectNetwork = (network: OfferNetwork) => {
         </section>
       )}
 
-      {activeNetwork && (
+      {activeNetwork === "socials" && (
+        <SocialsBonusSection
+          user={user}
+          onBack={handleBackToNetworks}
+          setUser={setUser}
+        />
+      )}
+
+      {activeNetwork && activeNetwork !== "socials" && (
         <>
           <div className="flex w-full max-w-6xl flex-col gap-4 rounded-3xl bg-slate-900 p-5 text-white shadow-lg md:flex-row md:items-center md:justify-between">
             <div>
@@ -980,5 +1029,194 @@ const handleSelectNetwork = (network: OfferNetwork) => {
         </>
       )}
     </div>
+  );
+}
+
+const SOCIAL_TIMER_SECONDS = 60;
+
+type SocialProps = {
+  user: UserSummary | null;
+  onBack: () => void;
+  setUser: UpdateUserFn;
+};
+
+function SocialsBonusSection({ user, onBack, setUser }: SocialProps) {
+  const [timer, setTimer] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimed, setClaimed] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const hasServerClaim =
+    user?.leads?.some((lead) => lead.offerId === "SOCIALS") ?? false;
+
+  useEffect(() => {
+    if (!timerRunning) return;
+    if (timer <= 0) {
+      setTimerRunning(false);
+      return;
+    }
+    const id = window.setTimeout(() => {
+      setTimer((prev) => prev - 1);
+    }, 1000);
+    return () => window.clearTimeout(id);
+  }, [timerRunning, timer]);
+
+  const startTimer = () => {
+    if (claimed || hasServerClaim) return;
+    setMessage(null);
+    setTimer(SOCIAL_TIMER_SECONDS);
+    setTimerRunning(true);
+  };
+
+  const handleClaim = async () => {
+    if (claimed || hasServerClaim) {
+      setMessage("Bonus already claimed.");
+      return;
+    }
+    if (timerRunning || timer > 0) {
+      setMessage("Let the 60s timer finish before claiming.");
+      return;
+    }
+
+    try {
+      setClaiming(true);
+      setMessage(null);
+      const response = await fetch("/api/socials/claim", {
+        method: "POST",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error ?? "Unable to grant bonus right now.");
+      }
+
+      setClaimed(true);
+      setMessage("Thanks! 1 point added to your balance.");
+      setUser((prev: UserSummary | null) => {
+        if (!prev) {
+          return prev;
+        }
+        const lead = data.lead;
+        const updatedLeads = lead
+          ? [
+              {
+                id: lead.id,
+                offerId: lead.offerId,
+                points: lead.points,
+                status: lead.status,
+                availableAt: lead.availableAt,
+                createdAt: lead.createdAt,
+                awardedAt: lead.awardedAt,
+              },
+              ...prev.leads,
+            ].slice(0, 10)
+          : prev.leads;
+
+        const bonusPoints = lead?.points ?? 0;
+        const newBalance = typeof data.balance === "number" ? data.balance : prev.balance + bonusPoints;
+        const newPending = typeof data.pending === "number" ? data.pending : prev.pending;
+        const newAvailable = prev.availablePoints + bonusPoints;
+        const totalPoints = newBalance + newPending;
+        const newLevel = Math.max(1, Math.floor(totalPoints / 100) + 1);
+
+        return {
+          ...prev,
+          balance: Number(newBalance.toFixed(2)),
+          pending: Number(newPending.toFixed(2)),
+          availablePoints: Number(newAvailable.toFixed(2)),
+          totalPoints: Number(totalPoints.toFixed(2)),
+          level: newLevel,
+          leads: updatedLeads,
+        };
+      });
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Unable to claim bonus."
+      );
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  const socials = [
+    { label: "YouTube", href: "https://www.youtube.com/@metabify" },
+    { label: "TikTok", href: "https://www.tiktok.com/@viprbxofficial" },
+    { label: "Instagram", href: "https://www.instagram.com/bertusontop/reels" },
+    { label: "Roblox", href: "https://www.roblox.com/users/2313780943/profile" },
+  ];
+
+  return (
+    <section className="w-full max-w-4xl rounded-3xl bg-white p-6 shadow-lg">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-2xl font-semibold text-slate-900">
+            Social Boost
+          </h3>
+          <button
+            type="button"
+            onClick={onBack}
+            className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+          >
+            Back to offer hubs
+          </button>
+        </div>
+        <p className="text-sm text-slate-600">
+          Follow our socials, wait 60 seconds, then claim a one-time 1 point
+          bonus.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {socials.map((social) => (
+            <a
+              key={social.label}
+              href={social.href}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center text-sm font-semibold text-slate-700 transition hover:border-emerald-400 hover:text-emerald-600"
+            >
+              {social.label}
+            </a>
+          ))}
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
+          <p className="text-sm font-semibold text-slate-700">
+            Timer:{" "}
+            <span className="text-xl">
+              {timerRunning ? `${timer}s` : claimed || hasServerClaim ? "Claimed" : "Start timer"}
+            </span>
+          </p>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={startTimer}
+              disabled={timerRunning || claimed || hasServerClaim}
+              className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-emerald-300"
+            >
+              {timerRunning ? "Timer running..." : "Start 60s timer"}
+            </button>
+            <button
+              type="button"
+              onClick={handleClaim}
+              disabled={
+                claimed ||
+                hasServerClaim ||
+                timerRunning ||
+                timer > 0 ||
+                claiming
+              }
+              className="rounded-full border border-emerald-500 px-5 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-500 hover:text-white disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400"
+            >
+              {claimed || hasServerClaim
+                ? "Already claimed"
+                : claiming
+                ? "Claiming..."
+                : "Claim 1 point"}
+            </button>
+          </div>
+          {message && (
+            <p className="mt-4 text-sm text-slate-600">{message}</p>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }

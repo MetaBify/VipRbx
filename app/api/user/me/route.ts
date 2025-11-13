@@ -4,6 +4,12 @@ import { authCookieOptions, verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const SIGNUP_BONUS_POINTS = 5;
+const SOCIAL_OFFER_IDS = [
+  "SOCIALS_YOUTUBE",
+  "SOCIALS_ROBLOX",
+  "SOCIALS_INSTAGRAM",
+  "SOCIALS_TIKTOK",
+];
 
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
@@ -136,6 +142,18 @@ export async function GET(req: NextRequest) {
     Math.floor((balancePoints + pendingPoints) / 100) + 1
   );
 
+  const socialLeads = await prisma.offerLead.findMany({
+    where: {
+      userId,
+      offerId: { in: SOCIAL_OFFER_IDS },
+    },
+    select: { offerId: true },
+  });
+
+  const socialClaims = Array.from(
+    new Set(socialLeads.map((lead) => lead.offerId))
+  );
+
   return NextResponse.json({
     user: {
       id: user.id,
@@ -150,6 +168,7 @@ export async function GET(req: NextRequest) {
       chatMutedUntil: user.chatMutedUntil,
       signupBonusAwarded: user.signupBonusAwarded,
       leads,
+      socialClaims,
     },
     bonusJustGranted,
   });

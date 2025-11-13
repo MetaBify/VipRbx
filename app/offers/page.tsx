@@ -1080,7 +1080,7 @@ const SOCIAL_REWARD_CARDS: Record<
     description: "Friend the account so we can gift private lobby perks.",
     offerId: "SOCIALS_ROBLOX",
     image:
-      "https://static.wikia.nocookie.net/logopedia/images/d/da/Roblox_2018_O_Icon_final_-_Gray.svg/revision/latest/scale-to-width-down/250?cb=20190809191156",
+      "https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/4X/0/e/e/0eeeb19633422b1241f4306419a0f15f39d58de9.png",
     imageAlt: "Roblox logo",
     unoptimized: true,
     backgroundClass: "bg-[#f2f4f7]",
@@ -1160,13 +1160,13 @@ function SocialsBonusSection({ user, onBack, setUser }: SocialProps) {
   }, [dialog]);
 
   const serverClaimed = useMemo(() => {
-    const leads = user?.leads ?? [];
+    const claims = user?.socialClaims ?? [];
     return SOCIAL_TYPES.reduce((acc, type) => {
       const offerId = SOCIAL_REWARD_CARDS[type].offerId;
-      acc[type] = leads.some((lead) => lead.offerId === offerId);
+      acc[type] = claims.includes(offerId);
       return acc;
     }, createSocialState(false));
-  }, [user?.leads]);
+  }, [user?.socialClaims]);
 
   useEffect(() => {
     setLocalClaimed((prev) => {
@@ -1229,6 +1229,8 @@ function SocialsBonusSection({ user, onBack, setUser }: SocialProps) {
             return prev;
           }
           const lead = data.lead;
+          const offerId =
+            lead?.offerId ?? SOCIAL_REWARD_CARDS[type].offerId ?? "SOCIALS";
           const updatedLeads = lead
             ? [
                 {
@@ -1242,7 +1244,7 @@ function SocialsBonusSection({ user, onBack, setUser }: SocialProps) {
                 },
                 ...prev.leads,
               ].slice(0, 10)
-            : prev.leads;
+              : prev.leads;
 
           const bonusPoints = lead?.points ?? 0;
           const newBalance =
@@ -1254,6 +1256,9 @@ function SocialsBonusSection({ user, onBack, setUser }: SocialProps) {
           const newAvailable = prev.availablePoints + bonusPoints;
           const totalPoints = newBalance + newPending;
           const newLevel = Math.max(1, Math.floor(totalPoints / 100) + 1);
+          const nextSocialClaims = Array.from(
+            new Set([...(prev.socialClaims ?? []), offerId])
+          );
 
           return {
             ...prev,
@@ -1263,6 +1268,7 @@ function SocialsBonusSection({ user, onBack, setUser }: SocialProps) {
             totalPoints: Number(totalPoints.toFixed(2)),
             level: newLevel,
             leads: updatedLeads,
+            socialClaims: nextSocialClaims,
           };
         });
       } catch (error) {
@@ -1340,7 +1346,7 @@ function SocialsBonusSection({ user, onBack, setUser }: SocialProps) {
           </button>
         </div>
         <p className="text-sm text-slate-600">
-          Tap a tile to open the social in a new tab. We�?ll auto-run a 60 second
+          Tap a tile to open the social in a new tab. Well auto-run a 60 second
           verification and drop +1 point per social once complete (max 4 points
           total, one per account).
         </p>

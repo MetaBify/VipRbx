@@ -29,6 +29,7 @@ export type UserSummary = {
   chatMutedUntil?: string | null;
   leads: LeadSummary[];
   signupBonusAwarded: boolean;
+  socialClaims: string[];
 };
 
 type StoreState = {
@@ -95,8 +96,13 @@ const fetchUser = async () => {
       return;
     }
 
+    const normalizedUser: UserSummary = {
+      ...data.user,
+      socialClaims: data.user.socialClaims ?? [],
+    };
+
     setState({
-      user: data.user,
+      user: normalizedUser,
       needsAuth: false,
       loading: false,
       bonusJustGranted: Boolean(data.bonusJustGranted),

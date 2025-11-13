@@ -195,7 +195,7 @@ const NETWORKS: Record<
     fetchUrl: "/api/offers/cpagrip",
   },
   socials: {
-    label: "Social Bonus",
+    label: "Socials",
     badge: "BONUS",
     boost: "+1pt",
     badgeColor: "bg-pink-500",
@@ -1047,6 +1047,10 @@ const SOCIAL_REWARD_CARDS: Record<
     image: string;
     imageAlt: string;
     unoptimized?: boolean;
+    backgroundClass: string;
+    textClass: string;
+    mutedTextClass: string;
+    badgeClass: string;
   }
 > = {
   youtube: {
@@ -1055,8 +1059,13 @@ const SOCIAL_REWARD_CARDS: Record<
     href: "https://www.youtube.com/@metabify",
     description: "Subscribe for new event drops & walkthroughs.",
     offerId: "SOCIALS_YOUTUBE",
-    image: "/images/yt.png",
+    image: "https://bloxearn.com/images/socials/youtube.svg",
     imageAlt: "YouTube logo",
+    unoptimized: true,
+    backgroundClass: "bg-[#121212]",
+    textClass: "text-white",
+    mutedTextClass: "text-white/70",
+    badgeClass: "bg-emerald-400 text-slate-900",
   },
   roblox: {
     label: "Roblox",
@@ -1068,6 +1077,10 @@ const SOCIAL_REWARD_CARDS: Record<
       "https://static.wikia.nocookie.net/logopedia/images/d/da/Roblox_2018_O_Icon_final_-_Gray.svg/revision/latest/scale-to-width-down/250?cb=20190809191156",
     imageAlt: "Roblox logo",
     unoptimized: true,
+    backgroundClass: "bg-[#f2f4f7]",
+    textClass: "text-slate-900",
+    mutedTextClass: "text-slate-500",
+    badgeClass: "bg-emerald-400 text-slate-900",
   },
   instagram: {
     label: "Instagram",
@@ -1075,10 +1088,13 @@ const SOCIAL_REWARD_CARDS: Record<
     href: "https://www.instagram.com/bertusontop/reels",
     description: "Reels preview upcoming contests + payout proofs.",
     offerId: "SOCIALS_INSTAGRAM",
-    image:
-      "https://img.freepik.com/premium-psd/instagram-logo_971166-164438.jpg?semt=ais_hybrid&w=740&q=80",
+    image: "https://bloxearn.com/images/socials/instagram.svg",
     imageAlt: "Instagram logo",
     unoptimized: true,
+    backgroundClass: "bg-white",
+    textClass: "text-slate-900",
+    mutedTextClass: "text-slate-500",
+    badgeClass: "bg-emerald-400 text-slate-900",
   },
   tiktok: {
     label: "TikTok",
@@ -1086,10 +1102,13 @@ const SOCIAL_REWARD_CARDS: Record<
     href: "https://www.tiktok.com/@viprbxofficial",
     description: "Daily clips with live payout announcements.",
     offerId: "SOCIALS_TIKTOK",
-    image:
-      "https://img.freepik.com/premium-vector/social-media-icon-illustration-tiktok-tiktok-icon-vector-illustration_561158-2136.jpg?semt=ais_incoming&w=740&q=80",
+    image: "https://bloxearn.com/images/socials/tiktok.svg",
     imageAlt: "TikTok logo",
     unoptimized: true,
+    backgroundClass: "bg-[#050505]",
+    textClass: "text-white",
+    mutedTextClass: "text-white/70",
+    badgeClass: "bg-emerald-400 text-slate-900",
   },
 };
 
@@ -1118,32 +1137,40 @@ function SocialsBonusSection({ user, onBack, setUser }: SocialProps) {
   const [claiming, setClaiming] = useState<Record<SocialType, boolean>>(() =>
     createSocialState(false)
   );
-  const [messages, setMessages] = useState<
-    Record<SocialType, string | null>
-  >(() => createSocialState(null));
   const [localClaimed, setLocalClaimed] = useState<
     Record<SocialType, boolean>
   >(() => createSocialState(false));
+  const [dialog, setDialog] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!dialog || typeof window === "undefined") {
+      return;
+    }
+    const id = window.setTimeout(() => setDialog(null), 4000);
+    return () => window.clearTimeout(id);
+  }, [dialog]);
 
   const serverClaimed = useMemo(() => {
     const leads = user?.leads ?? [];
     return SOCIAL_TYPES.reduce((acc, type) => {
+      const offerId = SOCIAL_REWARD_CARDS[type].offerId;
       acc[type] = leads.some(
-        (lead) =>
-          lead.offerId === SOCIAL_REWARD_CARDS[type].offerId ||
-          lead.offerId === "SOCIALS"
+        (lead) => lead.offerId === offerId || lead.offerId === "SOCIALS"
       );
       return acc;
-    }, {} as Record<SocialType, boolean>);
+    }, createSocialState(false));
   }, [user?.leads]);
 
   useEffect(() => {
     setLocalClaimed((prev) => {
-      let changed = false;
       const next = { ...prev };
+      let changed = false;
       SOCIAL_TYPES.forEach((type) => {
-        if (!serverClaimed[type] && prev[type]) {
-          next[type] = false;
+        if (serverClaimed[type] && !next[type]) {
+          next[type] = true;
           changed = true;
         }
       });
@@ -1153,84 +1180,31 @@ function SocialsBonusSection({ user, onBack, setUser }: SocialProps) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const ids = SOCIAL_TYPES.map((type) => {
-      if (!timerRunning[type] || timers[type] <= 0) {
-        return null;
-      }
-      const id = window.setTimeout(() => {
-        let nextValue = 0;
-        setTimers((prev) => {
-          const current = prev[type];
-          if (current <= 0) {
-            nextValue = 0;
-            return prev;
-          }
-          const updated = current - 1;
-          nextValue = updated;
-          return { ...prev, [type]: updated };
+    const active = SOCIAL_TYPES.filter(
+      (type) => timerRunning[type] && timers[type] > 0
+    );
+    if (!active.length) {
+      return;
+    }
+    const id = window.setTimeout(() => {
+      setTimers((prev) => {
+        const updated = { ...prev };
+        active.forEach((type) => {
+          updated[type] = Math.max(0, prev[type] - 1);
         });
-        if (nextValue <= 0) {
-          setTimerRunning((prev) => {
-            if (!prev[type]) return prev;
-            return { ...prev, [type]: false };
-          });
-          if (!serverClaimed[type] && !localClaimed[type]) {
-            setMessages((prev) => ({
-              ...prev,
-              [type]: "Timer finished. Tap claim to lock in +1 point.",
-            }));
-          }
-        }
-      }, 1000);
-      return id;
-    });
-
-    return () => {
-      ids.forEach((id) => {
-        if (id) {
-          window.clearTimeout(id);
-        }
+        return updated;
       });
-    };
-  }, [localClaimed, serverClaimed, timerRunning, timers]);
+    }, 1000);
+    return () => window.clearTimeout(id);
+  }, [timerRunning, timers]);
 
-  const setMessageFor = useCallback(
-    (type: SocialType, value: string | null) => {
-      setMessages((prev) => ({ ...prev, [type]: value }));
-    },
-    []
-  );
-
-  const startTimer = useCallback(
-    (type: SocialType) => {
-      if (serverClaimed[type] || localClaimed[type]) {
-        setMessageFor(type, "Bonus already claimed.");
-        return;
-      }
-      setMessageFor(
-        type,
-        "Timer started. Keep this tab open for 60 seconds, then claim."
-      );
-      setTimers((prev) => ({ ...prev, [type]: SOCIAL_TIMER_SECONDS }));
-      setTimerRunning((prev) => ({ ...prev, [type]: true }));
-    },
-    [localClaimed, serverClaimed, setMessageFor]
-  );
-
-  const handleClaim = useCallback(
+  const claimSocial = useCallback(
     async (type: SocialType) => {
       if (serverClaimed[type] || localClaimed[type]) {
-        setMessageFor(type, "Bonus already claimed.");
         return;
       }
-      if (timerRunning[type] || timers[type] > 0) {
-        setMessageFor(type, "Let the 60s timer finish before claiming.");
-        return;
-      }
-
       try {
         setClaiming((prev) => ({ ...prev, [type]: true }));
-        setMessageFor(type, null);
         const response = await fetch("/api/socials/claim", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1242,9 +1216,10 @@ function SocialsBonusSection({ user, onBack, setUser }: SocialProps) {
         }
 
         setLocalClaimed((prev) => ({ ...prev, [type]: true }));
-        setTimers((prev) => ({ ...prev, [type]: 0 }));
-        setTimerRunning((prev) => ({ ...prev, [type]: false }));
-        setMessageFor(type, "Thanks! 1 point added to your balance.");
+        setDialog({
+          type: "success",
+          message: `+1 point added for ${SOCIAL_REWARD_CARDS[type].label}.`,
+        });
         setUser((prev: UserSummary | null) => {
           if (!prev) {
             return prev;
@@ -1287,26 +1262,68 @@ function SocialsBonusSection({ user, onBack, setUser }: SocialProps) {
           };
         });
       } catch (error) {
-        setMessageFor(
-          type,
-          error instanceof Error ? error.message : "Unable to claim bonus."
-        );
+        setDialog({
+          type: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Unable to grant bonus right now.",
+        });
       } finally {
         setClaiming((prev) => ({ ...prev, [type]: false }));
       }
     },
-    [localClaimed, serverClaimed, setMessageFor, setUser, timerRunning, timers]
+    [localClaimed, serverClaimed, setUser]
+  );
+
+  useEffect(() => {
+    SOCIAL_TYPES.forEach((type) => {
+      if (timerRunning[type] && timers[type] <= 0 && !claiming[type]) {
+        setTimerRunning((prev) => ({ ...prev, [type]: false }));
+        if (!localClaimed[type] && !serverClaimed[type]) {
+          void claimSocial(type);
+        }
+      }
+    });
+  }, [claiming, claimSocial, localClaimed, serverClaimed, timerRunning, timers]);
+
+  const handleCardClick = useCallback(
+    (type: SocialType) => {
+      if (serverClaimed[type] || localClaimed[type]) {
+        setDialog({
+          type: "error",
+          message: `${SOCIAL_REWARD_CARDS[type].label} bonus already claimed.`,
+        });
+        return;
+      }
+
+      if (timerRunning[type] || claiming[type]) {
+        return;
+      }
+
+      if (typeof window !== "undefined") {
+        window.open(
+          SOCIAL_REWARD_CARDS[type].href,
+          "_blank",
+          "noopener,noreferrer"
+        );
+      }
+
+      setTimers((prev) => ({ ...prev, [type]: SOCIAL_TIMER_SECONDS }));
+      setTimerRunning((prev) => ({ ...prev, [type]: true }));
+    },
+    [claiming, localClaimed, serverClaimed, timerRunning]
   );
 
   return (
-    <section className="w-full max-w-4xl rounded-3xl bg-white p-6 shadow-lg">
+    <section className="w-full max-w-5xl rounded-[32px] bg-white p-6 shadow-xl">
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-emerald-500">
               VIPRbx socials
             </p>
-            <h3 className="text-2xl font-semibold text-slate-900">
+            <h3 className="text-3xl font-semibold text-slate-900">
               Social Boost
             </h3>
           </div>
@@ -1319,108 +1336,105 @@ function SocialsBonusSection({ user, onBack, setUser }: SocialProps) {
           </button>
         </div>
         <p className="text-sm text-slate-600">
-          Open a social, follow/subscribe, start the 60s timer, then claim 1
-          point. Each social can only be claimed once per account (max 4 points).
+          Tap a tile to open the social in a new tab. We�?ll auto-run a 60 second
+          verification and drop +1 point per social once complete (max 4 points
+          total, one per account).
         </p>
-        <div className="grid gap-4">
+        <div className="grid gap-4 md:grid-cols-2">
           {SOCIAL_TYPES.map((type) => {
             const card = SOCIAL_REWARD_CARDS[type];
             const timerValue = timers[type];
             const running = timerRunning[type];
             const alreadyClaimed = serverClaimed[type] || localClaimed[type];
-            const timerLabel = alreadyClaimed
-              ? "Done"
+
+            const statusLabel = claiming[type]
+              ? "Granting bonus..."
               : running
-              ? `${timerValue}s remaining`
-              : "Start 60s timer";
+              ? `Checking • ${timerValue}s`
+              : alreadyClaimed
+              ? "Done"
+              : "Tap to begin";
 
             return (
-              <div
+              <button
                 key={type}
-                className="rounded-3xl border border-slate-100 bg-slate-50/60 p-5 shadow-sm ring-1 ring-transparent transition hover:ring-emerald-300"
+                type="button"
+                onClick={() => handleCardClick(type)}
+                disabled={alreadyClaimed}
+                className={`relative overflow-hidden rounded-[28px] p-5 text-left shadow-lg transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-200 ${
+                  alreadyClaimed ? "opacity-80" : "hover:scale-[1.01]"
+                } ${card.backgroundClass} ${card.textClass}`}
               >
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white p-2 shadow-inner">
-                    <Image
-                      src={card.image}
-                      alt={card.imageAlt}
-                      width={64}
-                      height={64}
-                      className="h-12 w-12 object-contain"
-                      unoptimized={card.unoptimized}
-                    />
-                  </div>
-                  <div className="flex flex-1 flex-col gap-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-lg font-semibold text-slate-900">
-                        {card.label}
-                      </p>
-                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                        +1 point
-                      </span>
-                      {alreadyClaimed && (
-                        <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
-                          Claimed
-                        </span>
-                      )}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 p-2">
+                      <Image
+                        src={card.image}
+                        alt={card.imageAlt}
+                        width={48}
+                        height={48}
+                        className="h-10 w-10 object-contain"
+                        unoptimized={card.unoptimized}
+                      />
                     </div>
-                    <p className="text-sm font-medium text-slate-600">
-                      {card.handle}
-                    </p>
-                    <p className="text-sm text-slate-500">{card.description}</p>
+                    <div>
+                      <p className="text-lg font-semibold">{card.label}</p>
+                      <p className={`text-sm ${card.mutedTextClass}`}>
+                        {card.handle}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <span
+                      className={`rounded-full px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-wide ${card.badgeClass}`}
+                    >
+                      +1 point
+                    </span>
+                    {alreadyClaimed && (
+                      <span className="rounded-full bg-slate-900/80 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-white">
+                        Claimed
+                      </span>
+                    )}
                   </div>
                 </div>
-                <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-700">
-                  Timer:
-                  <span className="rounded-full bg-white px-3 py-1 text-base font-semibold text-slate-900">
-                    {timerLabel}
-                  </span>
+                <p className={`mt-3 text-sm ${card.mutedTextClass}`}>
+                  {card.description}
+                </p>
+                <div
+                  className={`mt-4 text-xs uppercase tracking-[0.35em] ${card.mutedTextClass}`}
+                >
+                  status
                 </div>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <a
-                    href={card.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex flex-1 items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-emerald-400 hover:text-emerald-600"
-                  >
-                    Open {card.label}
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => startTimer(type)}
-                    disabled={running || alreadyClaimed}
-                    className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-emerald-300"
-                  >
-                    {running ? "Timer running..." : "Start timer"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleClaim(type)}
-                    disabled={
-                      alreadyClaimed ||
-                      claiming[type] ||
-                      running ||
-                      timerValue > 0
-                    }
-                    className="rounded-full border border-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-500 hover:text-white disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400"
-                  >
-                    {alreadyClaimed
-                      ? "Already claimed"
-                      : claiming[type]
-                      ? "Claiming..."
-                      : "Claim 1 point"}
-                  </button>
-                </div>
-                {messages[type] && (
-                  <p className="mt-3 text-sm text-slate-600">
-                    {messages[type]}
-                  </p>
+                <p className={`text-base font-semibold ${card.textClass}`}>
+                  {statusLabel}
+                </p>
+                {(running || claiming[type]) && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-[28px] bg-slate-950/70 text-center text-white">
+                    <span className="text-sm font-semibold">
+                      {claiming[type] ? "Dropping +1 point..." : "Checking"}
+                    </span>
+                    {!claiming[type] && (
+                      <span className="text-3xl font-bold">{timerValue}s</span>
+                    )}
+                  </div>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
       </div>
+      {dialog && (
+        <div className="fixed bottom-6 left-1/2 z-50 w-full max-w-xs -translate-x-1/2 rounded-2xl bg-slate-900 px-4 py-3 text-center text-sm font-semibold text-white shadow-2xl">
+          {dialog.message}
+          <button
+            type="button"
+            onClick={() => setDialog(null)}
+            className="mt-2 inline-flex items-center justify-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-white/20"
+          >
+            Close
+          </button>
+        </div>
+      )}
     </section>
   );
 }

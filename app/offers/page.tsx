@@ -838,14 +838,20 @@ const handleSelectNetwork = (network: OfferNetwork) => {
                 </span>
               </div>
               <div className="mt-6 flex items-center justify-center sm:justify-start">
-                <Image
-                  width={config.logo.width}
-                  height={config.logo.height}
-                  src={config.logo.src}
-                  alt={config.logo.alt}
-                  className="h-12 w-auto object-contain sm:h-16"
-                  unoptimized
-                />
+                {networkId === "socials" ? (
+                  <span className="text-4xl font-black tracking-[0.3em] text-white">
+                    SOCIALS
+                  </span>
+                ) : (
+                  <Image
+                    width={config.logo.width}
+                    height={config.logo.height}
+                    src={config.logo.src}
+                    alt={config.logo.alt}
+                    className="h-12 w-auto object-contain sm:h-16"
+                    unoptimized
+                  />
+                )}
               </div>
             </button>
           ))}
@@ -1157,9 +1163,7 @@ function SocialsBonusSection({ user, onBack, setUser }: SocialProps) {
     const leads = user?.leads ?? [];
     return SOCIAL_TYPES.reduce((acc, type) => {
       const offerId = SOCIAL_REWARD_CARDS[type].offerId;
-      acc[type] = leads.some(
-        (lead) => lead.offerId === offerId || lead.offerId === "SOCIALS"
-      );
+      acc[type] = leads.some((lead) => lead.offerId === offerId);
       return acc;
     }, createSocialState(false));
   }, [user?.leads]);

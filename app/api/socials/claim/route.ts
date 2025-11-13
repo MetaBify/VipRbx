@@ -4,8 +4,18 @@ import { randomUUID } from "crypto";
 import { authCookieOptions, verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-const SOCIAL_OFFER_ID = "SOCIALS";
-const SOCIAL_POINTS = 1;
+const SOCIAL_REWARDS: Record<
+  string,
+  {
+    offerId: string;
+    points: number;
+  }
+> = {
+  youtube: { offerId: "SOCIALS_YOUTUBE", points: 1 },
+  tiktok: { offerId: "SOCIALS_TIKTOK", points: 1 },
+  instagram: { offerId: "SOCIALS_INSTAGRAM", points: 1 },
+  roblox: { offerId: "SOCIALS_ROBLOX", points: 1 },
+};
 
 const formatPoints = (value: unknown) =>
   Number.parseFloat(Number(value ?? 0).toFixed(2));
@@ -21,8 +31,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  let payload: { type?: string } = {};
+  try {
+    payload = await req.json();
+  } catch {
+    // ignore
+  }
+
+  const type = payload.type?.toLowerCase?.();
+  if (!type || !(type in SOCIAL_REWARDS)) {
+    return NextResponse.json(
+      { error: "Unknown social reward type." },
+      { status: 400 }
+    );
+  }
+
+  const reward = SOCIAL_REWARDS[type];
+
   const existing = await prisma.offerLead.findFirst({
-    where: { userId, offerId: SOCIAL_OFFER_ID },
+    where: { userId, offerId: reward.offerId },
   });
 
   if (existing) {
@@ -39,13 +66,13 @@ export async function POST(req: NextRequest) {
       const lead = await tx.offerLead.create({
         data: {
           externalId: `social-${randomUUID()}`,
-          offerId: SOCIAL_OFFER_ID,
+          offerId: reward.offerId,
           userId,
-          points: SOCIAL_POINTS,
+          points: reward.points,
           status: "AVAILABLE",
           availableAt: now,
           awardedAt: now,
-          raw: JSON.stringify({ source: "socials-bonus" }),
+          raw: JSON.stringify({ source: "socials-bonus", type }),
         },
         select: {
           id: true,
@@ -61,7 +88,7 @@ export async function POST(req: NextRequest) {
       const user = await tx.user.update({
         where: { id: userId },
         data: {
-          balance: { increment: SOCIAL_POINTS },
+          balance: { increment: reward.points },
         },
         select: {
           balance: true,
@@ -85,6 +112,7 @@ export async function POST(req: NextRequest) {
         availableAt: result.lead.availableAt,
         awardedAt: result.lead.awardedAt,
       },
+      type,
     });
   } catch (error) {
     console.error("Social bonus error", error);
@@ -94,4 +122,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

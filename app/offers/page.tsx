@@ -215,6 +215,12 @@ const NETWORKS: Record<
 const CHECK_WINDOW_MS = 48 * 60 * 60 * 1000;
 const DISPLAY_CHECK_WINDOW_MS = 10 * 60 * 60 * 1000;
 
+const formatPoints = (value: unknown, clampZero = false) => {
+  const numeric = Number(value ?? 0);
+  const safe = Number.isFinite(numeric) ? Number(numeric.toFixed(2)) : 0;
+  return clampZero ? Math.max(0, safe) : safe;
+};
+
 function extractOfferPoints(offer: OfferItem): number {
   const candidates: number[] = [];
 
@@ -468,14 +474,23 @@ export default function VerifyPage() {
           prev
             ? {
                 ...prev,
-                balance: data.balance ?? prev.balance,
-                pending: data.pending ?? prev.pending,
-                availablePoints:
-                  data.availablePoints ?? prev.availablePoints ?? prev.balance,
-                totalPoints:
-                  data.totalPoints ??
-                  prev.totalPoints ??
-                  prev.balance + prev.pending,
+                balance: formatPoints(
+                  typeof data.balance === "number" ? data.balance : prev.balance
+                ),
+                pending: formatPoints(
+                  typeof data.pending === "number" ? data.pending : prev.pending,
+                  true
+                ),
+                availablePoints: formatPoints(
+                  typeof data.availablePoints === "number"
+                    ? data.availablePoints
+                    : prev.availablePoints ?? prev.balance
+                ),
+                totalPoints: formatPoints(
+                  typeof data.totalPoints === "number"
+                    ? data.totalPoints
+                    : prev.totalPoints ?? prev.balance + prev.pending
+                ),
                 leads: data.leads ?? prev.leads,
               }
             : prev
@@ -672,20 +687,24 @@ export default function VerifyPage() {
           prev
             ? {
                 ...prev,
-                pending:
+                pending: formatPoints(
                   typeof data.pending === "number" ? data.pending : prev.pending,
-                totalPoints:
+                  true
+                ),
+                totalPoints: formatPoints(
                   typeof data.totalPoints === "number"
                     ? data.totalPoints
-                    : prev.totalPoints,
-                level: typeof data.level === "number" ? data.level : prev.level,
+                    : prev.totalPoints
+                ),
+                level:
+                  typeof data.level === "number"
+                    ? Math.max(1, Math.floor(data.level))
+                    : prev.level,
                 leads: data.lead
                   ? [
                       {
                         ...data.lead,
-                        points: Number(
-                          Number(data.lead.points ?? 0).toFixed(2)
-                        ),
+                        points: formatPoints(data.lead.points),
                       },
                       ...prev.leads.filter((lead) => lead.id !== data.lead.id),
                     ].slice(0, 10)

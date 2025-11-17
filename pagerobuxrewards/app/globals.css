@@ -2,6 +2,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+#main-site-nav {
+  display: none !important;
+}
+
+#main-site-nav + * {
+  margin-top: 0 !important;
+}
 * {
   font-weight: 500;
 }

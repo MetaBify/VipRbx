@@ -137,7 +137,10 @@ const NavBar = () => {
   const mobileLinks = user ? centerLinks : baseLinks;
 
   return (
-    <nav className="bg-[#dee1e3] fixed top-0 left-0 right-0 py-3 px-3 lg:px-6 z-50 shadow-md">
+    <nav
+      id="main-site-nav"
+      className="bg-[#dee1e3] fixed top-0 left-0 right-0 py-3 px-3 lg:px-6 z-50 shadow-md"
+    >
       <div className="flex w-full items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <button

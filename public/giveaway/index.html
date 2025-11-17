@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Robux Site</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="header-placeholder"></div>
+
+  <!-- Main Content -->
+  <main>
+    <div class="center-box">
+      <h2>Welcome to bify credits</h2>
+      <p>Complete tasks and earn Robux! 🚀</p>
+    </div>
+  </main>
+
+  <script>
+    (async function(){
+      try{
+        const r = await fetch('./header.html');
+        const html = await r.text();
+        document.getElementById('header-placeholder').innerHTML = html;
+        if (!window.__giveawayScriptLoaded){
+          window.__giveawayScriptLoaded = true;
+          const s = document.createElement('script');
+          s.src = './script.js';
+          s.onload = ()=>{ if(window.initHeader) initHeader(); };
+          document.body.appendChild(s);
+        } else if(window.initHeader) {
+          window.initHeader();
+        }
+      }catch(e){console.warn('header load failed',e)}
+    })();
+  </script>
+</body>
+</html>
+

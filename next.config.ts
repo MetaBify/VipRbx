@@ -30,6 +30,10 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
+        source: "/giveaway",
+        destination: "/giveaway/index.html",
+      },
+      {
         source: "/api/:path*",
         destination:
           "https://d3gi4w10ruedfh.cloudfront.net/public/external/:path*",

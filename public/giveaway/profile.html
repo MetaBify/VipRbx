@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Profile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="header-placeholder"></div>
+
+  <div class="profile-container" id="profile-card" style="display:none;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:18px;">
+      <img id="profile-headshot" src="" alt="Roblox Headshot" style="width:100px;height:100px;border-radius:50%;background:#23272f;border:3px solid #23272f;box-shadow:0 2px 12px #0003;">
+      <img id="profile-avatar" src="" alt="Roblox Avatar" style="width:150px;height:150px;border-radius:18px;background:#23272f;box-shadow:0 2px 12px #0003;">
+      <h2 id="profile-username" style="margin:0;color:#00c3ff;"></h2>
+  <div id="profile-userid" style="color:#b2becd;font-size:1rem;"></div>
+  <div id="profile-status" class="muted" style="margin-top:6px;font-size:0.95rem;">Initializing...</div>
+      <button id="logout-btn">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    (async function(){
+      try{
+        const r = await fetch('./header.html');
+        const html = await r.text();
+        document.getElementById('header-placeholder').innerHTML = html;
+        if (!window.__giveawayScriptLoaded){
+          window.__giveawayScriptLoaded = true;
+          await new Promise((res)=>{
+            const s = document.createElement('script');
+            s.src='./script.js';
+            s.onload = res;
+            document.body.appendChild(s);
+          });
+        } else if(window.initHeader && typeof window.initHeader === 'function'){
+          try{ await window.initHeader(); }catch(e){ console.warn('initHeader failed', e); }
+        }
+      }catch(e){console.warn('header/script load failed',e)}
+
+      if (localStorage.getItem('loggedIn') !== 'true') { window.location.href = 'index.html'; return; }
+      const card = document.getElementById('profile-card'); if(card) card.style.display='block';
+      const username = localStorage.getItem('username') || 'user1';
+      const nameEl = document.getElementById('profile-username'); if(nameEl) nameEl.textContent = username;
+      const statusEl = document.getElementById('profile-status');
+      try{
+  if (statusEl) statusEl.textContent = 'Looking up Roblox user via local proxy...';
+  // Query our local proxy which handles retries/CORS
+  const proxyRes = await fetch(`/api/roblox?username=${encodeURIComponent(username)}`);
+  if (!proxyRes.ok) throw new Error('Proxy lookup failed: ' + proxyRes.status);
+  const proxyJson = await proxyRes.json();
+  // For debugging, keep raw JSON in the console only (no UI debug panel)
+  try { console.debug('proxyJson', proxyJson); } catch(e){}
+  if (proxyJson.error) { if(statusEl) statusEl.textContent = 'Roblox user not found or proxy error'; const idEl = document.getElementById('profile-userid'); if(idEl) idEl.textContent='User not found'; return; }
+        const userId = proxyJson.id; const idEl = document.getElementById('profile-userid'); if(idEl) idEl.textContent = `UserId: ${userId}`;
+        if (statusEl) statusEl.textContent = 'Fetching avatar images...';
+        const avatarUrl = proxyJson.avatarUrl;
+        const headUrl = proxyJson.headshotUrl;
+        const aEl = document.getElementById('profile-avatar'); const hEl = document.getElementById('profile-headshot');
+        // set fallback handlers
+        if (aEl) { aEl.onerror = ()=>{ aEl.src = './images/robux.png'; if(statusEl) statusEl.textContent = 'Avatar failed to load'; }; }
+        if (hEl) { hEl.onerror = ()=>{ hEl.src = './images/robux.png'; if(statusEl) statusEl.textContent = 'Headshot failed to load'; }; }
+        if(aEl) aEl.src = avatarUrl || './images/robux.png';
+        if(hEl) hEl.src = headUrl || './images/robux.png';
+        if (statusEl) statusEl.textContent = '';
+      }catch(e){
+        console.warn('Failed to fetch Roblox profile',e);
+        if (statusEl) statusEl.textContent = 'Failed to load Roblox data (see console)';
+      }
+
+      const logout = document.getElementById('logout-btn'); if(logout) logout.addEventListener('click', ()=>{ localStorage.removeItem('loggedIn'); localStorage.removeItem('username'); window.location.href='index.html'; });
+    })();
+  </script>
+</body>
+</html>

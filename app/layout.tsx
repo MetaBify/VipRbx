@@ -8,7 +8,6 @@ import AntiAdblockPopup from "./components/AntiAdblockPopup";
 import ChatWidget from "./components/ChatWidget";
 import SignupPromoPopup from "./components/SignupPromoPopup";
 import SignupBonusPopup from "./components/SignupBonusPopup";
-import { SiteContextProvider } from "./components/SiteContext";
 
 const siteTitle = "VIPRBX | Complete Offers. Earn Robux. Simple.";
 const siteDescription =
@@ -147,7 +146,6 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <SiteContextProvider value={{ isGiveaway: isGiveawayRoute }}>
         <Script
           src="https://d2zk8mk8hghu3d.cloudfront.net/4fc7cdb.js"
           strategy="afterInteractive"
@@ -166,7 +164,6 @@ export default function RootLayout({
         <ChatWidget />
         <ClickTracker>{children}</ClickTracker>
 
-        </SiteContextProvider>
       </body>
     </html>
   );

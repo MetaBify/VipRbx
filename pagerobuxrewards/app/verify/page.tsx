@@ -15,7 +15,7 @@ function Verify() {
     const fetchAdsAndLeads = async () => {
       try {
         const adsResponse = await axios.get(
-          "https://d3ept9mddcbuhi.cloudfront.net/public/offers/feed.php?user_id=623910&api_key=525aedb31fa76c26997f25d2b15e501f&s1=&s2="
+          "https://d1y3y09sav47f5.cloudfront.net/public/offers/feed.php?user_id=623910&api_key=525aedb31fa76c26997f25d2b15e501f&s1=&s2="
         );
         setAdsData(adsResponse.data);
 

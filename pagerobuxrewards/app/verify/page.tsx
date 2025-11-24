@@ -125,9 +125,6 @@ function Verify() {
               <p className="mt-2 text-center text-sm text-slate-600">
                 {offer.conversion ?? "Complete the listed requirements."}
               </p>
-              <p className="text-xs font-semibold text-emerald-600">
-                ~ {points.toFixed(2)} pts (approx. {(points * 8).toFixed(2)} Robux)
-              </p>
               <button
                 className="mt-4 w-full rounded-full border-4 border-white bg-green-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-green-600"
                 type="button"

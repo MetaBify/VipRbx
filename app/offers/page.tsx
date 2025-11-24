@@ -639,10 +639,18 @@ export default function VerifyPage() {
 
   const openOfferUrl = useCallback((url?: string) => {
     if (!url) return;
-    const popup = window.open(url, "_blank", "noopener,noreferrer");
-    if (!popup) {
-      window.location.href = url;
+    let opened: Window | null = null;
+    try {
+      opened = window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      console.error("Popup open blocked", e);
     }
+    // Fallback: force navigation if popup was blocked
+    window.setTimeout(() => {
+      if (!opened || opened.closed) {
+        window.location.href = url;
+      }
+    }, 150);
   }, []);
 
   const handleStartOffer = useCallback(

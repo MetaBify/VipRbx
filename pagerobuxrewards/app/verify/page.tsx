@@ -51,10 +51,17 @@ const formatReward = (offer: TapRainOffer) => {
 
 const openOfferUrl = (url?: string) => {
   if (!url) return;
-  const popup = window.open(url, "_blank", "noopener,noreferrer");
-  if (!popup) {
-    window.location.href = url;
+  let opened: Window | null = null;
+  try {
+    opened = window.open(url, "_blank", "noopener,noreferrer");
+  } catch (e) {
+    console.error("Popup blocked", e);
   }
+  window.setTimeout(() => {
+    if (!opened || opened.closed) {
+      window.location.href = url;
+    }
+  }, 150);
 };
 
 function Verify() {

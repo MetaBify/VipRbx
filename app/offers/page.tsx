@@ -637,9 +637,17 @@ export default function VerifyPage() {
     });
   }, [user?.leads]);
 
+  const openOfferUrl = useCallback((url?: string) => {
+    if (!url) return;
+    const popup = window.open(url, "_blank", "noopener,noreferrer");
+    if (!popup) {
+      window.location.href = url;
+    }
+  }, []);
+
   const handleStartOffer = useCallback(
     async (offer: OfferItem) => {
-      window.open(offer.url, "_blank", "noopener");
+      openOfferUrl(offer.url);
 
       if (!user) {
         setError("Sign in to start offers.");
@@ -728,7 +736,7 @@ export default function VerifyPage() {
         );
       }
     },
-    [user, setUser, refresh]
+    [user, setUser, refresh, openOfferUrl]
   );
 
   const handleLoadMore = () => {
@@ -1018,6 +1026,7 @@ const handleSelectNetwork = (network: OfferNetwork) => {
 
                     <button
                       className={buttonClasses}
+                      type="button"
                       onClick={() => handleStartOffer(ad)}
                     >
                       {isChecking && (
@@ -1093,6 +1102,7 @@ const handleSelectNetwork = (network: OfferNetwork) => {
 
               <button
                 className={buttonClasses}
+                type="button"
                 onClick={() => handleStartOffer(ad)}
               >
                 {isChecking && (

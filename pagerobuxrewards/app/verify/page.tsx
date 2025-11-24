@@ -49,6 +49,14 @@ const formatReward = (offer: TapRainOffer) => {
   return `~ ${pts.toFixed(2)} pts (approx. ${robux.toFixed(2)} Robux)`;
 };
 
+const openOfferUrl = (url?: string) => {
+  if (!url) return;
+  const popup = window.open(url, "_blank", "noopener,noreferrer");
+  if (!popup) {
+    window.location.href = url;
+  }
+};
+
 function Verify() {
   const [offers, setOffers] = useState<TapRainOffer[]>([]);
   // removed lead checker for this view
@@ -128,10 +136,8 @@ function Verify() {
             </p>
             <button
               className="mt-4 w-full rounded-full border-4 border-white bg-green-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-green-600"
-              onClick={() => {
-                if (!offer.url) return;
-                window.open(offer.url, "_blank", "noopener,noreferrer");
-              }}
+              type="button"
+              onClick={() => openOfferUrl(offer.url)}
             >
               Start offer
             </button>

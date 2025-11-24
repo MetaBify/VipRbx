@@ -1026,11 +1026,7 @@ const handleSelectNetwork = (network: OfferNetwork) => {
                       {buttonLabel}
                     </button>
 
-                    {hasFailed && (
-                      <p className="mt-2 text-center text-xs font-semibold text-rose-600">
-                        Prompt failed to verify completion. Please retry.
-                      </p>
-                    )}
+                    {/* hide failure ribbon for taprain to keep cards clean */}
                   </div>
                 );
               })}

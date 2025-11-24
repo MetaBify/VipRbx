@@ -84,7 +84,7 @@ function Verify() {
     loadOffers();
   }, []);
 
-  const cards = useMemo(() => offers.slice(0, 24), [offers]);
+  const cards = useMemo(() => offers.slice(0, 10), [offers]);
 
   return (
     <div className="bg-gray-200 flex flex-col items-center gap-5 px-4 py-[60px]">

@@ -57,11 +57,9 @@ const openOfferUrl = (url?: string) => {
   } catch (e) {
     console.error("Popup blocked", e);
   }
-  window.setTimeout(() => {
-    if (!opened || opened.closed) {
-      window.location.href = url;
-    }
-  }, 150);
+  if (!opened) {
+    console.warn("Popup blocked. Please allow popups for this site to open offers.");
+  }
 };
 
 function Verify() {

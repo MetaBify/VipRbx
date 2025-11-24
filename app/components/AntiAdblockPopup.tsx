@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 export default function AntiAdblockPopup() {
   const [blocked, setBlocked] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -49,9 +50,36 @@ export default function AntiAdblockPopup() {
   }, []);
 
   const handleRetry = () => {
-    if (typeof window !== "undefined") {
-      window.location.reload();
+    if (typeof window === "undefined") {
+      return;
     }
+    const next = retryCount + 1;
+    setRetryCount(next);
+    if (next >= 3) {
+      window.location.reload();
+      return;
+    }
+
+    const bait = document.createElement("div");
+    bait.className = "adsbox ad-unit banner-slot";
+    bait.style.position = "absolute";
+    bait.style.left = "-9999px";
+    bait.style.width = "1px";
+    bait.style.height = "1px";
+    bait.style.pointerEvents = "none";
+    document.body.appendChild(bait);
+
+    window.setTimeout(() => {
+      const isBlocked =
+        !bait ||
+        bait.offsetParent === null ||
+        bait.offsetHeight === 0 ||
+        bait.clientHeight === 0;
+      setBlocked(isBlocked);
+      if (bait && bait.parentNode) {
+        bait.parentNode.removeChild(bait);
+      }
+    }, 180);
   };
 
   if (!blocked) {
@@ -74,7 +102,7 @@ export default function AntiAdblockPopup() {
           onClick={handleRetry}
           className="mt-5 w-full rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-emerald-600"
         >
-          I disabled my ad blocker
+          I disabled my ad blocker ({Math.min(retryCount + 1, 3)}/3)
         </button>
         <p className="mt-3 text-center text-xs text-slate-500">
           Access will stay locked until ad blocking is fully disabled.

@@ -6,6 +6,7 @@ import Loading from "../components/Loader";
 
 type TapRainOffer = {
   id: string | number;
+  name?: string;
   anchor?: string;
   conversion?: string;
   payout?: string | number;

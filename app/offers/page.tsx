@@ -273,6 +273,9 @@ const parseNumber = (value: unknown): number | null => {
   return null;
 };
 
+const decodeHtml = (value?: string) =>
+  value ? value.replace(/&nbsp;/g, " ") : "";
+
 const mapBitLabsOffer = (offer: BitLabsOffer): OfferItem => {
   const eventWithPayout =
     offer.events?.find((event) => parseNumber(event.payout) && event.payable) ??
@@ -952,8 +955,89 @@ const handleSelectNetwork = (network: OfferNetwork) => {
             </div>
           )}
 
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full max-w-6xl">
-            {activeOffers.slice(0, displayCount).map((ad) => {
+          {activeNetwork === "taprain" ? (
+            <div className="grid w-full max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {activeOffers.slice(0, displayCount).map((ad) => {
+                const estimatedPoints = extractOfferPoints(ad);
+                const serverLead = user?.leads?.find(
+                  (lead) =>
+                    lead.offerId === ad.id &&
+                    (lead.status === "CHECKING" || lead.status === "FAILED")
+                );
+                const serverState = serverLead
+                  ? {
+                      status:
+                        serverLead.status === "CHECKING" ? "checking" : "failed",
+                      endAt:
+                        serverLead.status === "CHECKING"
+                          ? new Date(serverLead.availableAt).getTime()
+                          : null,
+                    }
+                  : null;
+                const offerState = serverState ?? offerChecks[ad.id];
+                const isChecking =
+                  offerState?.status === "checking" &&
+                  (!offerState.endAt || offerState.endAt > Date.now());
+                const hasFailed = !isChecking && offerState?.status === "failed";
+                let buttonLabel = "Start offer";
+                if (isChecking) {
+                  buttonLabel = "Checking...";
+                }
+
+                const buttonClasses = isChecking
+                  ? "mt-4 w-full rounded-full border-4 border-white bg-slate-400 py-2 text-sm font-semibold text-white transition hover:bg-slate-500"
+                  : "mt-4 w-full rounded-full border-4 border-white bg-emerald-500 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600";
+
+                return (
+                  <div
+                    key={ad.id}
+                    className="relative flex flex-col items-center justify-between rounded-xl border border-gray-300 bg-white p-5 text-center shadow-lg transition duration-200 hover:-translate-y-1 hover:shadow-xl"
+                  >
+                    <Image
+                      width={80}
+                      height={80}
+                      src={ad.network_icon}
+                      alt={decodeHtml(ad.name ?? "Offer")}
+                      className="h-20 w-20 rounded-md border border-gray-200 object-contain"
+                      unoptimized
+                    />
+                    <div className="mt-3 flex flex-col items-center gap-2 text-center">
+                      <h3 className="text-lg font-semibold text-slate-900">
+                        {decodeHtml(ad.name ?? "Offer")}
+                      </h3>
+                      {ad.conversion && (
+                        <p className="text-sm text-slate-600">
+                          {decodeHtml(ad.conversion)}
+                        </p>
+                      )}
+                      <p className="text-xs font-semibold text-emerald-600">
+                        ~ {estimatedPoints.toFixed(2)} pts (approx.{" "}
+                        {(estimatedPoints * 8).toFixed(2)} Robux)
+                      </p>
+                    </div>
+
+                    <button
+                      className={buttonClasses}
+                      onClick={() => handleStartOffer(ad)}
+                    >
+                      {isChecking && (
+                        <span className="mr-2 inline-flex h-3 w-3 animate-spin rounded-full border-2 border-white border-l-transparent" />
+                      )}
+                      {buttonLabel}
+                    </button>
+
+                    {hasFailed && (
+                      <p className="mt-2 text-center text-xs font-semibold text-rose-600">
+                        Prompt failed to verify completion. Please retry.
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full max-w-6xl">
+              {activeOffers.slice(0, displayCount).map((ad) => {
           const estimatedPoints = extractOfferPoints(ad);
           const serverLead = user?.leads?.find(
             (lead) =>
@@ -1029,7 +1113,8 @@ const handleSelectNetwork = (network: OfferNetwork) => {
             </div>
           );
         })}
-          </div>
+            </div>
+          )}
 
           {activeOffers.length > 0 && (
             <div className="mt-8 flex gap-4">

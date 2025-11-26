@@ -126,24 +126,6 @@ export default function RootLayout({
             __html: JSON.stringify(organizationSchema),
           }}
         />
-        <Script
-          id="popunder-ads"
-          type="text/javascript"
-          data-cfasync="false"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `/*<![CDATA[/* */
-(function(){var a=window,z="b07271ae12a5e828144b454762d4f779",l=[["siteId",795+626+11*363*803+2046805],["minBid",0],["popundersPerIP","0"],["delayBetween",0],["default",false],["defaultPerDay",0],["topmostLayer","auto"]],c=["d3d3LnZpc2FyaW9tZWRpYS5jb20vb3NvY2lhbC1zaGFyZS5taW4uY3Nz","ZDEzazdwcmF4MXlpMDQuY2xvdWRmcm9udC5uZXQvUi9mc3VydmV5LmFuZ3VsYXIubWluLmpz"],g=-1,v,n,s=function(){clearTimeout(n);g++;if(c[g]&&!(1789907590000<(new Date).getTime()&&1<g)){v=a.document.createElement("script");v.type="text/javascript";v.async=!0;var b=a.document.getElementsByTagName("script")[0];v.src="https://"+atob(c[g]);v.crossOrigin="anonymous";v.onerror=s;v.onload=function(){clearTimeout(n);a[z.slice(0,16)+z.slice(0,16)]||s()};n=setTimeout(s,5E3);b.parentNode.insertBefore(v,b)}};if(!a[z]){try{Object.freeze(a[z]=l)}catch(e){}s()}})();
-/*]]>/* */`,
-          }}
-        />
-      </head>
-      <body>
-        <Script
-          src="https://d2zk8mk8hghu3d.cloudfront.net/4fc7cdb.js"
-          strategy="afterInteractive"
-        />
-
         <Analytics />
 
         {!isGiveawayRoute && (

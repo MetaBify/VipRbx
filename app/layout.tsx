@@ -13,7 +13,6 @@ const siteTitle = "VIPRBX | Complete Offers. Earn Robux. Simple.";
 const siteDescription =
   "Complete offers, earn points, and redeem Robux instantly. Join VIPRBX today and grab 5 bonus points just for signing up!";
 const siteKeywords = [
-  // 🔹 Short + powerful
   "earn robux",
   "free robux",
   "robux payout",
@@ -21,14 +20,12 @@ const siteKeywords = [
   "roblox rewards",
   "robux cashout",
   "viprbx",
-  
-  // 🔹 Long-tail (for SEO boost)
   "earn robux online",
   "free robux site",
   "robux rewards platform",
   "legit robux site",
   "robux offerwall",
-  "withdraw robux fast"
+  "withdraw robux fast",
 ];
 
 export const metadata: Metadata = {
@@ -127,7 +124,9 @@ export default function RootLayout({
           }}
         />
         <Analytics />
+      </head>
 
+      <body>
         {!isGiveawayRoute && (
           <>
             <AntiAdblockPopup />
@@ -135,7 +134,12 @@ export default function RootLayout({
             <SignupBonusPopup />
           </>
         )}
+
         <NavBar />
         <ChatWidget />
+
+        {children}
+      </body>
+    </html>
   );
 }

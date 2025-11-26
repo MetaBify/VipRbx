@@ -137,8 +137,5 @@ export default function RootLayout({
         )}
         <NavBar />
         <ChatWidget />
-
-      </body>
-    </html>
   );
 }

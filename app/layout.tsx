@@ -137,7 +137,6 @@ export default function RootLayout({
         )}
         <NavBar />
         <ChatWidget />
-        <ClickTracker>{children}</ClickTracker>
 
       </body>
     </html>

@@ -19,10 +19,8 @@ export async function GET(req: NextRequest) {
     cookieStore.get(authCookieOptions.name)?.value ??
     req.cookies.get(authCookieOptions.name)?.value;
   const userId = verifyToken(token);
-
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Giveaway flow should be public; fall back to a guest ID when there is no auth cookie.
+  const subId = userId ?? "guest";
 
   const forwardedFor =
     req.headers.get("x-forwarded-for") ??
@@ -35,7 +33,7 @@ export async function GET(req: NextRequest) {
   url.searchParams.set("user_id", feedUserId);
   url.searchParams.set("api_key", feedApiKey);
   url.searchParams.set("limit", "10");
-  url.searchParams.set("s1", userId);
+  url.searchParams.set("s1", subId);
   url.searchParams.set("s2", "");
   if (clientIp) {
     url.searchParams.set("ip", clientIp);

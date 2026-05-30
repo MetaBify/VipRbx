@@ -156,7 +156,7 @@ const RobuxBox = () => {
             </p>
 
           <button
-            onClick={() => router.push("/giveaway/verify")}
+            onClick={() => router.push("/funding/verify")}
               className="mt-6 min-h-12 w-full rounded-md bg-green-500 px-5 py-3 text-base font-bold text-white shadow-md transition hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           >
               Proceed to Verification

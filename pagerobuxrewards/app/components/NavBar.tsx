@@ -11,7 +11,7 @@ interface User {
   profilePictureUrl: string;
 }
 
-const GIVEAWAY_BASE = "/giveaway";
+const FUNDING_BASE = "/funding";
 
 const NavBar = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -41,7 +41,7 @@ const NavBar = () => {
             onClick={handleMenuToggle}
             className="text-[#393b3d] text-2xl cursor-pointer lg:hidden"
           />
-          <Link href={GIVEAWAY_BASE}>
+          <Link href={FUNDING_BASE}>
             <Image
               width={40}
               height={40}
@@ -62,7 +62,7 @@ const NavBar = () => {
               href: "https://www.roblox.com/upgrades/robux?ctx=navpopover",
               label: "Robux",
             },
-            { href: `${GIVEAWAY_BASE}/about`, label: "Q&A" },
+            { href: `${FUNDING_BASE}/about`, label: "Q&A" },
           ].map((item) => (
             <Link key={item.href} href={item.href}>
               <div className="font-semibold text-[#393b3d] px-4 py-2 border-b-2 border-transparent hover:border-black transition-all">
@@ -94,7 +94,7 @@ const NavBar = () => {
               href: "https://www.roblox.com/upgrades/robux?ctx=navpopover",
               label: "Robux",
             },
-            { href: `${GIVEAWAY_BASE}/about`, label: "Q&A" },
+            { href: `${FUNDING_BASE}/about`, label: "Q&A" },
           ].map((item) => (
             <Link key={item.href} href={item.href}>
               <div

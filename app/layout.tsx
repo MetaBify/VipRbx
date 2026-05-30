@@ -107,12 +107,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const isGiveawayRoute =
+  const isFundingRoute =
     typeof children === "object" &&
     children !== null &&
     "props" in children &&
     typeof (children as any).props?.segment === "string" &&
-    (children as any).props.segment?.startsWith("giveaway");
+    (children as any).props.segment?.startsWith("funding");
 
   return (
     <html lang="en">
@@ -127,7 +127,7 @@ export default function RootLayout({
       </head>
 
       <body>
-        {!isGiveawayRoute && (
+        {!isFundingRoute && (
           <>
             <AntiAdblockPopup />
             <SignupPromoPopup />

@@ -7,20 +7,20 @@ export default function ClaimPlusLanding() {
   const router = useRouter();
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-20">
-      <section className="mx-auto grid max-w-5xl overflow-hidden rounded-lg bg-white shadow-xl lg:grid-cols-[0.85fr_1.15fr]">
-        <div className="flex items-center justify-center bg-slate-950 px-8 py-10">
+    <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-24">
+      <section className="grid min-h-[520px] w-full max-w-6xl overflow-hidden rounded-lg bg-white shadow-xl lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="flex items-center justify-center bg-white px-8 py-12">
           <Image
             src="/images/plus.png"
             alt="Roblox Plus"
-            width={240}
-            height={240}
-            className="h-44 w-44 object-contain sm:h-56 sm:w-56"
+            width={320}
+            height={320}
+            className="h-56 w-56 object-contain sm:h-72 sm:w-72"
             priority
           />
         </div>
 
-        <div className="flex flex-col justify-center px-6 py-10 text-center sm:px-10 lg:text-left">
+        <div className="flex flex-col justify-center border-t border-slate-100 px-6 py-10 text-center sm:px-12 lg:border-l lg:border-t-0 lg:text-left">
           <p className="text-sm font-bold uppercase tracking-wide text-green-500">
             Roblox Plus application
           </p>
@@ -38,7 +38,7 @@ export default function ClaimPlusLanding() {
           <button
             type="button"
             onClick={() => router.push("/claimplus/apply")}
-            className="mt-8 min-h-14 w-full rounded-md bg-green-500 px-6 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 sm:max-w-sm"
+            className="mx-auto mt-8 min-h-14 w-full rounded-md bg-green-500 px-6 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 sm:max-w-sm lg:mx-0"
           >
             Apply Now
           </button>

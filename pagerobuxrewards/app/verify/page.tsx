@@ -95,6 +95,31 @@ function Verify() {
         </span>
       </header>
 
+      <section className="flex w-full max-w-6xl flex-col items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white px-5 py-4 text-center shadow-md sm:flex-row sm:text-left">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Verification progress
+          </p>
+          <h2 className="mt-1 text-xl font-bold text-slate-900">
+            Complete 1 offer to continue
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            You must complete any one of the offers listed below.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-full bg-slate-100 px-4 py-2">
+          <img
+            src="/images/bubblesload.gif"
+            alt="Checking offer completion"
+            className="h-8 w-8 object-contain"
+          />
+          <span className="text-base font-bold text-slate-900">
+            0/1 Completed Offer
+          </span>
+        </div>
+      </section>
+
       {loading && <Loading verify={true} />}
 
       {error && (

@@ -27,6 +27,20 @@ const nextConfig: NextConfig = {
       "www.cpagrip.com",
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/giveaway",
+        destination: "/funding",
+        permanent: true,
+      },
+      {
+        source: "/giveaway/:path*",
+        destination: "/funding/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

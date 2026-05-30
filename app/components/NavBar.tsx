@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { FaBars, FaTimes } from "react-icons/fa";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useUserSummary } from "@/lib/useUserSummary";
 
 const logoSrc = "/images/roblox-logo.png";
@@ -15,6 +15,9 @@ const NavBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState("/images/noob.png");
   const router = useRouter();
+  const pathname = usePathname();
+  const logoOnly =
+    pathname.startsWith("/funding") || pathname.startsWith("/claimplus");
 
   const handleLogout = async () => {
     try {
@@ -143,13 +146,15 @@ const NavBar = () => {
     >
       <div className="flex w-full items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleMenuToggle}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white/80 text-[#393b3d] shadow lg:hidden"
-            aria-label="Open navigation"
-          >
-            <FaBars size={18} />
-          </button>
+          {!logoOnly && (
+            <button
+              onClick={handleMenuToggle}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white/80 text-[#393b3d] shadow lg:hidden"
+              aria-label="Open navigation"
+            >
+              <FaBars size={18} />
+            </button>
+          )}
           <Link href="/" className="lg:hidden">
             <Image
               width={48}
@@ -171,17 +176,19 @@ const NavBar = () => {
                 priority
               />
             </Link>
-            {centerLinks.map((item) => (
-              <Link key={item.href} href={item.href}>
-                <div className="font-semibold text-[#393b3d] px-4 py-2 border-b-2 border-transparent hover:border-black transition-all">
-                  {item.label}
-                </div>
-              </Link>
-            ))}
+            {!logoOnly &&
+              centerLinks.map((item) => (
+                <Link key={item.href} href={item.href}>
+                  <div className="font-semibold text-[#393b3d] px-4 py-2 border-b-2 border-transparent hover:border-black transition-all">
+                    {item.label}
+                  </div>
+                </Link>
+              ))}
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        {!logoOnly && (
+          <div className="flex items-center gap-3">
           {user && (
             <div className="ml-auto flex items-center gap-2 rounded-full bg-white/70 px-2.5 py-1 text-[13px] font-semibold text-gray-900 lg:hidden">
               <Image
@@ -267,14 +274,16 @@ const NavBar = () => {
               </>
             )}
           </div>
-        </div>
+          </div>
+        )}
       </div>
 
-      <div
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg transform ${
-          isMenuOpen ? "translate-x-0" : "-translate-x-full"
-        } transition-transform duration-300 ease-in-out z-50`}
-      >
+      {!logoOnly && (
+        <div
+          className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg transform ${
+            isMenuOpen ? "translate-x-0" : "-translate-x-full"
+          } transition-transform duration-300 ease-in-out z-50`}
+        >
         <div className="flex justify-end p-4">
           <FaTimes
             onClick={closeMenu}
@@ -306,9 +315,10 @@ const NavBar = () => {
             </button>
           )}
         </div>
-      </div>
+        </div>
+      )}
 
-      {!loading && !user && (
+      {!logoOnly && !loading && !user && (
         <div className="mt-3 flex items-center justify-end gap-3 lg:hidden">
           <Link
             href="/login"

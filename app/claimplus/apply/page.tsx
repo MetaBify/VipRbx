@@ -40,26 +40,26 @@ export default function ClaimPlusApply() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-16">
-      <section className="mx-auto max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <div className="mb-6 flex flex-col items-center text-center">
+    <main className="min-h-screen bg-slate-100 px-4 py-20">
+      <section className="mx-auto max-w-lg overflow-hidden rounded-lg bg-white shadow-xl">
+        <div className="border-b border-slate-200 bg-slate-950 px-6 py-7 text-center">
           <Image
             src="/images/plus.png"
             alt="Roblox Plus"
             width={96}
             height={96}
-            className="h-20 w-20 object-contain"
+            className="mx-auto h-20 w-20 object-contain"
             priority
           />
-          <h1 className="mt-4 text-2xl font-bold text-slate-950">
+          <h1 className="mt-4 text-2xl font-bold text-white">
             Roblox Plus Application
           </h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Enter your details to apply for 6 months for non-creators.
+          <p className="mt-2 text-sm text-slate-300">
+            Enter your details to continue to verification.
           </p>
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-4 p-6" onSubmit={handleSubmit}>
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">
               Roblox username
@@ -99,7 +99,7 @@ export default function ClaimPlusApply() {
             disabled={submitting}
             className="min-h-12 w-full rounded-md bg-green-500 px-5 py-3 text-base font-bold text-white shadow-md transition hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
-            {submitting ? "Submitting..." : "Apply"}
+            {submitting ? "Submitting..." : "Submit Application"}
           </button>
         </form>
       </section>

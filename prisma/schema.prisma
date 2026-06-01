@@ -69,10 +69,3 @@ model RainClaim {
 
   @@unique([rainId, userId])
 }
-
-model ClaimPlusApplication {
-  id             String   @id @default(cuid())
-  robloxUsername String
-  email          String
-  createdAt      DateTime @default(now())
-}
